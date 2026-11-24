@@ -154,6 +154,7 @@ input:focus,select:focus{border-color:var(--green);box-shadow:3px 3px 0 var(--gr
 .personsum{padding:12px 0;border-bottom:1.5px solid #687681}
 .personsum:last-child{border:0}
 .personsum .top{display:flex;justify-content:space-between;font-weight:900;color:#f2f0e7}
+.ate-list{font-size:11px;color:#d5e2d8;margin-top:5px;line-height:1.35;word-break:break-word}
 .bar{height:10px;background:#202a32;border:1.5px solid var(--line);border-radius:0;margin-top:8px;overflow:hidden}
 .bar span{display:block;height:100%;background:#b7a1ff}
 .notice{padding:11px 13px;border-radius:4px;background:#e9bd5f;color:#20252a;border:2px solid var(--line);font-size:12px;font-weight:750;margin-top:12px}
@@ -1136,19 +1137,33 @@ textarea.code-box{
     const totalCount = items.reduce((s, it) => s + it.qty, 0);
     const gst = Math.max(0, +$('gstCharge').value || 0);
     const raw = Object.fromEntries(people.map(p => [p, 0]));
+    const ate = Object.fromEntries(people.map(p => [p, []]));
     const unassigned = [];
 
     items.forEach(it => {
       const total = it.qty * it.price;
       const assigned = it.assigned.filter(p => people.includes(p));
       if (!assigned.length) { unassigned.push(it.name); return; }
+      const itemLabel = it.qty > 1 ? `${it.name} ×${it.qty}` : it.name;
       if (it.mode === 'custom') {
         const weights = assigned.map(p => Math.max(0, +it.shares[p] || 0));
         const sum = weights.reduce((a, b) => a + b, 0);
-        if (sum > 0) assigned.forEach((p, i) => raw[p] += total * weights[i] / sum);
-        else assigned.forEach(p => raw[p] += total / assigned.length);
+        if (sum > 0) {
+          assigned.forEach((p, i) => {
+            raw[p] += total * weights[i] / sum;
+            if (weights[i] > 0) ate[p].push(assigned.length > 1 ? `${itemLabel} (${weights[i]}/${sum})` : itemLabel);
+          });
+        } else {
+          assigned.forEach(p => {
+            raw[p] += total / assigned.length;
+            ate[p].push(assigned.length > 1 ? `${itemLabel} (1/${assigned.length})` : itemLabel);
+          });
+        }
       } else {
-        assigned.forEach(p => raw[p] += total / assigned.length);
+        assigned.forEach(p => {
+          raw[p] += total / assigned.length;
+          ate[p].push(assigned.length > 1 ? `${itemLabel} (1/${assigned.length})` : itemLabel);
+        });
       }
     });
 
@@ -1177,13 +1192,14 @@ textarea.code-box{
       ? people.map(p => `
         <div class="personsum">
           <div class="top"><span>${esc(p)}</span><span>${money(totals[p])}</span></div>
+          <div class="ate-list">${ate[p].length ? esc(ate[p].join(' · ')) : '<span class="muted">No items assigned yet</span>'}</div>
           <div class="bar"><span style="width:${sub ? Math.max(0, Math.min(100, raw[p] / sub * 100)) : 0}%"></span></div>
           <div class="muted small">${sub ? (raw[p] / sub * 100).toFixed(1) : '0.0'}% of food subtotal</div>
         </div>
       `).join('')
       : '<p class="muted small">Add people to see the split.</p>';
 
-    return { sub, gst, total: grand, raw, totals, valid, unassigned };
+    return { sub, gst, total: grand, raw, ate, totals, valid, unassigned };
   }
 
   function render(){
@@ -1262,7 +1278,7 @@ textarea.code-box{
       'NEE.ENTHA.KAZHICHE — Bill Split',
       'Total: ' + money(c.total),
       '',
-      ...people.map(p => p + ': ' + money(c.totals[p]))
+      ...people.map(p => `${p}: ${money(c.totals[p])}${c.ate[p].length ? ' (' + c.ate[p].join(', ') + ')' : ''}`)
     ];
     const text = lines.join('\n');
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -1286,8 +1302,8 @@ textarea.code-box{
       ['GST', c.gst.toFixed(2)],
       ['Total', c.total.toFixed(2)],
       [],
-      ['Person', 'Owes'],
-      ...people.map(p => [p, c.totals[p].toFixed(2)])
+      ['Person', 'Items', 'Owes'],
+      ...people.map(p => [p, c.ate[p].join(', '), c.totals[p].toFixed(2)])
     ];
     const csv = rows.map(r => r.map(v => '"' + String(v ?? '').replace(/"/g, '""') + '"').join(',')).join('\n');
     const a = document.createElement('a');
