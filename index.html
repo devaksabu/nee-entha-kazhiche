@@ -1144,25 +1144,25 @@ textarea.code-box{
       const total = it.qty * it.price;
       const assigned = it.assigned.filter(p => people.includes(p));
       if (!assigned.length) { unassigned.push(it.name); return; }
-      const itemLabel = it.qty > 1 ? `${it.name} ×${it.qty}` : it.name;
+      const itemLabel = `${it.qty} × ${it.name}`;
       if (it.mode === 'custom') {
         const weights = assigned.map(p => Math.max(0, +it.shares[p] || 0));
         const sum = weights.reduce((a, b) => a + b, 0);
         if (sum > 0) {
           assigned.forEach((p, i) => {
             raw[p] += total * weights[i] / sum;
-            if (weights[i] > 0) ate[p].push(assigned.length > 1 ? `${itemLabel} (${weights[i]}/${sum})` : itemLabel);
+            if (weights[i] > 0) ate[p].push(itemLabel);
           });
         } else {
           assigned.forEach(p => {
             raw[p] += total / assigned.length;
-            ate[p].push(assigned.length > 1 ? `${itemLabel} (1/${assigned.length})` : itemLabel);
+            ate[p].push(itemLabel);
           });
         }
       } else {
         assigned.forEach(p => {
           raw[p] += total / assigned.length;
-          ate[p].push(assigned.length > 1 ? `${itemLabel} (1/${assigned.length})` : itemLabel);
+          ate[p].push(itemLabel);
         });
       }
     });
@@ -1191,7 +1191,7 @@ textarea.code-box{
     $('splitList').innerHTML = people.length
       ? people.map(p => `
         <div class="personsum">
-          <div class="top"><span>${esc(p)}</span><span>${money(totals[p])}</span></div>
+          <div class="top"><span>${esc(p)}</span></div>
           <div class="ate-list">${ate[p].length ? esc(ate[p].join(' · ')) : '<span class="muted">No items assigned yet</span>'}</div>
           <div class="bar"><span style="width:${sub ? Math.max(0, Math.min(100, raw[p] / sub * 100)) : 0}%"></span></div>
           <div class="muted small">${sub ? (raw[p] / sub * 100).toFixed(1) : '0.0'}% of food subtotal</div>
@@ -1275,18 +1275,17 @@ textarea.code-box{
       return;
     }
     const lines = [
-      'NEE.ENTHA.KAZHICHE — Bill Split',
-      'Total: ' + money(c.total),
+      'NEE.ENTHA.KAZHICHE — What Everyone Had',
       '',
-      ...people.map(p => `${p}: ${money(c.totals[p])}${c.ate[p].length ? ' (' + c.ate[p].join(', ') + ')' : ''}`)
+      ...people.map(p => `${p}: ${c.ate[p].length ? c.ate[p].join(', ') : 'Nothing'}`)
     ];
     const text = lines.join('\n');
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text)
-        .then(() => showNoticeModal('Copied!', 'Split summary copied to clipboard. Paste it into WhatsApp or group chat!'))
-        .catch(() => showNoticeModal('Copy Split Summary', text));
+        .then(() => showNoticeModal('Copied!', 'Summary copied to clipboard. Paste it into WhatsApp or group chat!'))
+        .catch(() => showNoticeModal('Copy Summary', text));
     } else {
-      showNoticeModal('Copy Split Summary', text);
+      showNoticeModal('Copy Summary', text);
     }
   };
 
@@ -1298,12 +1297,9 @@ textarea.code-box{
     }
     const rows = [
       ['App', 'NEE.ENTHA.KAZHICHE'],
-      ['Subtotal', c.sub.toFixed(2)],
-      ['GST', c.gst.toFixed(2)],
-      ['Total', c.total.toFixed(2)],
       [],
-      ['Person', 'Items', 'Owes'],
-      ...people.map(p => [p, c.ate[p].join(', '), c.totals[p].toFixed(2)])
+      ['Person', 'Items'],
+      ...people.map(p => [p, c.ate[p].join(', ')])
     ];
     const csv = rows.map(r => r.map(v => '"' + String(v ?? '').replace(/"/g, '""') + '"').join(',')).join('\n');
     const a = document.createElement('a');
