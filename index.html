@@ -1195,7 +1195,7 @@ textarea.code-box{
     $('splitList').innerHTML = people.length
       ? people.map(p => `
         <div class="personsum">
-          <div class="top"><span>${esc(p)}</span></div>
+          <div class="top"><span>${esc(p)}</span><span>${money(totals[p])}</span></div>
           <div class="ate-list">${ate[p].length ? ate[p].map(x => `<div>${esc(x)}</div>`).join('') : '<span class="muted">No items assigned yet</span>'}</div>
           <div class="bar"><span style="width:${sub ? Math.max(0, Math.min(100, raw[p] / sub * 100)) : 0}%"></span></div>
           <div class="muted small">${sub ? (raw[p] / sub * 100).toFixed(1) : '0.0'}% of food subtotal</div>
@@ -1281,7 +1281,7 @@ textarea.code-box{
     const lines = [
       'NEE.ENTHA.KAZHICHE — What Everyone Had',
       '',
-      ...people.map(p => `${p}:
+      ...people.map(p => `${p}: ${money(c.totals[p])}
 ${c.ate[p].length ? c.ate[p].join('\n') : 'Nothing'}`)
     ];
     const text = lines.join('\n');
@@ -1303,8 +1303,8 @@ ${c.ate[p].length ? c.ate[p].join('\n') : 'Nothing'}`)
     const rows = [
       ['App', 'NEE.ENTHA.KAZHICHE'],
       [],
-      ['Person', 'Items'],
-      ...people.map(p => [p, c.ate[p].join(', ')])
+      ['Person', 'Items', 'Owes'],
+      ...people.map(p => [p, c.ate[p].join(', '), c.totals[p].toFixed(2)])
     ];
     const csv = rows.map(r => r.map(v => '"' + String(v ?? '').replace(/"/g, '""') + '"').join(',')).join('\n');
     const a = document.createElement('a');
