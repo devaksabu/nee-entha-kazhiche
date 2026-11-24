@@ -491,7 +491,7 @@ textarea.code-box{
   function showNoticeModal(title, message){
     openModal(`
       <h3>${esc(title)}</h3>
-      <p style="margin:0;line-height:1.5">${esc(message)}</p>
+      <p style="margin:0;line-height:1.5;white-space:pre-line">${esc(message)}</p>
       <div class="modal-actions">
         <button id="mOkBtn">OK</button>
       </div>
@@ -811,56 +811,58 @@ textarea.code-box{
   };
 
   $('showScriptBtn').onclick = () => {
-    const code = `const SHEET_NAME = 'Menus';
-
-function getOrCreateSheet() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName(SHEET_NAME);
-  if (!sheet) {
-    sheet = ss.insertSheet(SHEET_NAME);
-    sheet.appendRow(['MenuID', 'MenuName', 'DishName', 'Price']);
-  }
-  return sheet;
-}
-
-function doGet() {
-  const sheet = getOrCreateSheet();
-  const rows = sheet.getDataRange().getValues();
-  const menus = {};
-  for (let i = 1; i < rows.length; i++) {
-    const [id, name, dish, price] = rows[i];
-    if (!id || !dish) continue;
-    if (!menus[id]) menus[id] = { name: String(name || id), items: [] };
-    menus[id].items.push([String(dish), 1, Number(price) || 0]);
-  }
-  return ContentService
-    .createTextOutput(JSON.stringify({ ok: true, menus }))
-    .setMimeType(ContentService.MimeType.JSON);
-}
-
-function doPost(e) {
-  try {
-    const payload = JSON.parse(e.postData.contents);
-    const menus = payload.menus || {};
-    const sheet = getOrCreateSheet();
-    const out = [['MenuID', 'MenuName', 'DishName', 'Price']];
-    Object.keys(menus).forEach(id => {
-      const m = menus[id];
-      (m.items || []).forEach(it => {
-        out.push([id, m.name, it[0], Number(it[2]) || 0]);
-      });
-    });
-    sheet.clearContents();
-    sheet.getRange(1, 1, out.length, 4).setValues(out);
-    return ContentService
-      .createTextOutput(JSON.stringify({ ok: true }))
-      .setMimeType(ContentService.MimeType.JSON);
-  } catch (err) {
-    return ContentService
-      .createTextOutput(JSON.stringify({ ok: false, error: err.message }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}`;
+    const code = [
+      "const SHEET_NAME = 'Menus';",
+      "",
+      "function getOrCreateSheet() {",
+      "  const ss = SpreadsheetApp.getActiveSpreadsheet();",
+      "  let sheet = ss.getSheetByName(SHEET_NAME);",
+      "  if (!sheet) {",
+      "    sheet = ss.insertSheet(SHEET_NAME);",
+      "    sheet.appendRow(['MenuID', 'MenuName', 'DishName', 'Price']);",
+      "  }",
+      "  return sheet;",
+      "}",
+      "",
+      "function doGet() {",
+      "  const sheet = getOrCreateSheet();",
+      "  const rows = sheet.getDataRange().getValues();",
+      "  const menus = {};",
+      "  for (let i = 1; i < rows.length; i++) {",
+      "    const [id, name, dish, price] = rows[i];",
+      "    if (!id || !dish) continue;",
+      "    if (!menus[id]) menus[id] = { name: String(name || id), items: [] };",
+      "    menus[id].items.push([String(dish), 1, Number(price) || 0]);",
+      "  }",
+      "  return ContentService",
+      "    .createTextOutput(JSON.stringify({ ok: true, menus }))",
+      "    .setMimeType(ContentService.MimeType.JSON);",
+      "}",
+      "",
+      "function doPost(e) {",
+      "  try {",
+      "    const payload = JSON.parse(e.postData.contents);",
+      "    const menus = payload.menus || {};",
+      "    const sheet = getOrCreateSheet();",
+      "    const out = [['MenuID', 'MenuName', 'DishName', 'Price']];",
+      "    Object.keys(menus).forEach(id => {",
+      "      const m = menus[id];",
+      "      (m.items || []).forEach(it => {",
+      "        out.push([id, m.name, it[0], Number(it[2]) || 0]);",
+      "      });",
+      "    });",
+      "    sheet.clearContents();",
+      "    sheet.getRange(1, 1, out.length, 4).setValues(out);",
+      "    return ContentService",
+      "      .createTextOutput(JSON.stringify({ ok: true }))",
+      "      .setMimeType(ContentService.MimeType.JSON);",
+      "  } catch (err) {",
+      "    return ContentService",
+      "      .createTextOutput(JSON.stringify({ ok: false, error: err.message }))",
+      "      .setMimeType(ContentService.MimeType.JSON);",
+      "  }",
+      "}"
+    ].join("\n");
     openModal(`
       <h3>Google Apps Script (Code.gs)</h3>
       <p class="muted small" style="margin:0 0 8px">1. Open Google Sheets → Extensions → Apps Script.<br>2. Paste this code, click Deploy → New deployment → Web app (Execute as: Me, Access: Anyone).<br>3. Copy the Web App URL into Admin Mode.</p>
@@ -1130,8 +1132,7 @@ function doPost(e) {
       '',
       ...people.map(p => p + ': ' + money(c.totals[p]))
     ];
-    const text = lines.join('
-');
+    const text = lines.join('\n');
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text)
         .then(() => showNoticeModal('Copied!', 'Split summary copied to clipboard. Paste it into WhatsApp or group chat!'))
@@ -1157,8 +1158,7 @@ function doPost(e) {
       ['Person', 'Owes'],
       ...people.map(p => [p, c.totals[p].toFixed(2)])
     ];
-    const csv = rows.map(r => r.map(v => '"' + String(v ?? '').replace(/"/g, '""') + '"').join(',')).join('
-');
+    const csv = rows.map(r => r.map(v => '"' + String(v ?? '').replace(/"/g, '""') + '"').join(',')).join('\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
     a.download = 'nee-entha-kazhiche-split.csv';
@@ -1186,8 +1186,7 @@ function doPost(e) {
         });
       }
       const result = await Tesseract.recognize(file, 'eng');
-      const lines = result.data.text.split(/
-/).map(x => x.trim()).filter(Boolean);
+      const lines = result.data.text.split(/\n/).map(x => x.trim()).filter(Boolean);
       const found = [];
       lines.forEach(line => {
         const m = line.match(/^(.+?)\s+(?:x\s*\d+\s+)?(?:₹|Rs\.?|INR)?\s*(\d+(?:[.,]\d{1,2})?)\s*$/i);
