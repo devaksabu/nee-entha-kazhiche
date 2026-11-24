@@ -192,7 +192,6 @@ textarea.code-box{
   .itemedit{grid-template-columns:1fr 1fr}
   .itemedit input:first-child{grid-column:1/-1}
   .itemedit button{grid-column:1/-1}
-  .charges-row{flex-direction:column;align-items:stretch}
   .admin-row{grid-template-columns:1fr}
   .menu-grid{grid-template-columns:1fr}
 }
@@ -341,15 +340,13 @@ textarea.code-box{
         <div class="hint">For shared dishes, select everyone who ate it. Switch to “Custom shares” for unequal portions.</div>
       </section>
 
-      <!-- STEP 4 -->
+      <!-- STEP 4: GST ONLY -->
       <section class="card">
-        <h2 class="step"><span class="num">4</span> Taxes, charges &amp; discounts</h2>
-        <div class="row charges-row">
-          <div class="field grow"><label for="tax">Tax (%)</label><input id="tax" type="number" min="0" max="100" step=".01" value="5"></div>
-          <div class="field grow"><label for="service">Service charge (₹)</label><input id="service" type="number" min="0" step=".01" value="0"></div>
-          <div class="field grow"><label for="discount">Discount (₹)</label><input id="discount" type="number" min="0" step=".01" value="0"></div>
+        <h2 class="step"><span class="num">4</span> GST</h2>
+        <div class="field" style="margin-bottom:0">
+          <label for="gstCharge">GST charge (₹)</label>
+          <input id="gstCharge" type="number" min="0" step=".01" value="0" placeholder="Enter GST amount in ₹">
         </div>
-        <p class="muted small">Tax is calculated on the item subtotal. Service charge and discount are distributed proportionally.</p>
       </section>
     </main>
 
@@ -358,9 +355,7 @@ textarea.code-box{
       <section class="card">
         <h2>Bill summary</h2>
         <div class="summaryline"><span>Items subtotal</span><strong id="subtotal">₹0.00</strong></div>
-        <div class="summaryline"><span>Tax</span><strong id="taxAmount">₹0.00</strong></div>
-        <div class="summaryline"><span>Service charge</span><strong id="serviceAmount">₹0.00</strong></div>
-        <div class="summaryline"><span>Discount</span><strong id="discountAmount">−₹0.00</strong></div>
+        <div class="summaryline"><span>GST</span><strong id="gstAmount">₹0.00</strong></div>
         <div class="summaryline total"><span>Total</span><span id="grandTotal">₹0.00</span></div>
         <div class="notice" id="validation">Add people and items to calculate the split.</div>
       </section>
@@ -545,7 +540,6 @@ textarea.code-box{
         if (inp.value.trim() === adminPin) {
           close();
           setAdminState(true);
-          // Switch to Choose from menu tab automatically
           document.querySelector('[data-mode="menu"]').click();
         } else {
           inp.value = '';
@@ -611,7 +605,6 @@ textarea.code-box{
         const idx = +btn.dataset.pickDish;
         const dish = menus[currentMenuKey].items[idx];
         if (!dish) return;
-        // Increment qty if same dish & price already in bill
         const existing = items.find(x => x.name.toLowerCase() === dish[0].toLowerCase() && Number(x.price) === Number(dish[2]));
         if (existing) {
           existing.qty += 1;
@@ -1008,9 +1001,7 @@ function doPost(e) {
 
   function calculate(){
     const sub = items.reduce((s, it) => s + it.qty * it.price, 0);
-    const tax = sub * Math.max(0, +$('tax').value || 0) / 100;
-    const service = Math.max(0, +$('service').value || 0);
-    const discount = Math.max(0, +$('discount').value || 0);
+    const gst = Math.max(0, +$('gstCharge').value || 0);
     const raw = Object.fromEntries(people.map(p => [p, 0]));
     const unassigned = [];
 
@@ -1028,14 +1019,12 @@ function doPost(e) {
       }
     });
 
-    const totals = Object.fromEntries(people.map(p => [p, sub ? raw[p] * (1 + (tax + service - discount) / sub) : 0]));
-    const grand = Math.max(0, sub + tax + service - discount);
+    const totals = Object.fromEntries(people.map(p => [p, sub ? raw[p] * (1 + gst / sub) : 0]));
+    const grand = sub + gst;
     const valid = people.length > 0 && items.length > 0 && !unassigned.length;
 
     $('subtotal').textContent = money(sub);
-    $('taxAmount').textContent = money(tax);
-    $('serviceAmount').textContent = money(service);
-    $('discountAmount').textContent = '−' + money(discount);
+    $('gstAmount').textContent = money(gst);
     $('grandTotal').textContent = money(grand);
     $('mobileTotal').textContent = money(grand);
 
@@ -1046,9 +1035,7 @@ function doPost(e) {
         ? 'Add at least one item.'
         : unassigned.length
           ? 'Assign ' + unassigned.join(', ') + ' to at least one person.'
-          : discount > sub + tax + service
-            ? 'Discount is greater than the bill total.'
-            : 'Split calculated! Charges and discount are shared proportionally.';
+          : 'Split calculated! GST is distributed proportionally to each person’s items.';
     valEl.classList.toggle('ok', valid);
 
     $('splitList').innerHTML = people.length
@@ -1061,7 +1048,7 @@ function doPost(e) {
       `).join('')
       : '<p class="muted small">Add people to see the split.</p>';
 
-    return { sub, tax, service, discount, total: grand, raw, totals, valid, unassigned };
+    return { sub, gst, total: grand, raw, totals, valid, unassigned };
   }
 
   function render(){
@@ -1079,7 +1066,6 @@ function doPost(e) {
       return;
     }
     people.push(n);
-    // Auto-assign existing items if this is the first person added
     if (people.length === 1) items.forEach(it => { if (!it.assigned.length) it.assigned.push(n); });
     $('personName').value = '';
     render();
@@ -1100,7 +1086,7 @@ function doPost(e) {
     $('newItemPrice').value = '';
   };
 
-  ['tax', 'service', 'discount'].forEach(id => $(id).addEventListener('input', calculate));
+  $('gstCharge').addEventListener('input', calculate);
 
   document.querySelectorAll('#modeTabs button').forEach(b => b.onclick = () => {
     document.querySelectorAll('#modeTabs button').forEach(x => x.classList.toggle('active', x === b));
@@ -1125,9 +1111,7 @@ function doPost(e) {
         items = [];
         people = [];
         $('billName').value = '';
-        $('tax').value = 5;
-        $('service').value = 0;
-        $('discount').value = 0;
+        $('gstCharge').value = 0;
         render();
         close();
       };
@@ -1146,7 +1130,8 @@ function doPost(e) {
       '',
       ...people.map(p => p + ': ' + money(c.totals[p]))
     ];
-    const text = lines.join('\n');
+    const text = lines.join('
+');
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text)
         .then(() => showNoticeModal('Copied!', 'Split summary copied to clipboard. Paste it into WhatsApp or group chat!'))
@@ -1166,15 +1151,14 @@ function doPost(e) {
       ['App', 'NEE.ENTHA.KAZHICHE'],
       ['Bill', $('billName').value],
       ['Subtotal', c.sub.toFixed(2)],
-      ['Tax', c.tax.toFixed(2)],
-      ['Service charge', c.service.toFixed(2)],
-      ['Discount', c.discount.toFixed(2)],
+      ['GST', c.gst.toFixed(2)],
       ['Total', c.total.toFixed(2)],
       [],
       ['Person', 'Owes'],
       ...people.map(p => [p, c.totals[p].toFixed(2)])
     ];
-    const csv = rows.map(r => r.map(v => '"' + String(v ?? '').replace(/"/g, '""') + '"').join(',')).join('\n');
+    const csv = rows.map(r => r.map(v => '"' + String(v ?? '').replace(/"/g, '""') + '"').join(',')).join('
+');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
     a.download = 'nee-entha-kazhiche-split.csv';
@@ -1202,7 +1186,8 @@ function doPost(e) {
         });
       }
       const result = await Tesseract.recognize(file, 'eng');
-      const lines = result.data.text.split(/\n/).map(x => x.trim()).filter(Boolean);
+      const lines = result.data.text.split(/
+/).map(x => x.trim()).filter(Boolean);
       const found = [];
       lines.forEach(line => {
         const m = line.match(/^(.+?)\s+(?:x\s*\d+\s+)?(?:₹|Rs\.?|INR)?\s*(\d+(?:[.,]\d{1,2})?)\s*$/i);
