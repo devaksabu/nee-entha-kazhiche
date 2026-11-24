@@ -100,10 +100,19 @@ input:focus,select:focus{border-color:var(--green);box-shadow:3px 3px 0 var(--gr
   background:#2b353e;border:2px solid var(--line);border-radius:4px;padding:11px 12px;
   box-shadow:3px 3px 0 var(--line);display:flex;flex-direction:column;justify-content:space-between;gap:8px;
 }
+.dish-card.in-bill{border-color:var(--green)}
 .dish-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
 .dish-name{font-weight:850;font-size:13.5px;color:#f2f0e7;line-height:1.3}
 .dish-price{background:var(--green);color:#20252a;border:1.5px solid var(--line);padding:2px 7px;border-radius:3px;font-weight:950;font-size:12px;white-space:nowrap}
-.dish-actions{display:flex;gap:6px;align-items:center;justify-content:space-between;margin-top:2px}
+.dish-actions{display:flex;gap:6px;align-items:center;justify-content:space-between;margin-top:2px;flex-wrap:wrap}
+.qty-stepper{display:inline-flex;align-items:center;gap:5px;background:#202a32;border:1.5px solid var(--line);border-radius:4px;padding:2px 4px}
+.qty-stepper button{min-height:28px;height:28px;width:28px;padding:0;font-size:14px;box-shadow:1px 1px 0 var(--line)}
+.qty-val{min-width:22px;text-align:center;font-weight:950;font-size:13px;color:var(--green)}
+.dish-sub{font-size:11.5px;font-weight:800;color:var(--green)}
+.menu-tally{
+  display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;
+  background:#202a32;border:2px solid var(--line);border-radius:4px;padding:10px 12px;margin-top:10px;
+}
 .admin-panel{
   background:#28313a;border:2.5px solid #e58b70;border-radius:5px;padding:14px;margin-top:14px;
   box-shadow:4px 4px 0 var(--line);
@@ -222,7 +231,10 @@ textarea.code-box{
     <main>
       <!-- STEP 1 -->
       <section class="card">
-        <h2 class="step"><span class="num">1</span> Start your bill</h2>
+        <div class="row" style="justify-content:space-between;margin-bottom:15px">
+          <h2 class="step" style="margin:0"><span class="num">1</span> Start your bill</h2>
+          <span class="pill" id="billSummaryPill">0 items · ₹0.00</span>
+        </div>
         <div class="field">
           <label for="billName">Bill / restaurant name</label>
           <input id="billName" placeholder="e.g. Evening chai at Café" value="Dinner with friends">
@@ -259,10 +271,11 @@ textarea.code-box{
 
           <div class="menu-grid" id="menuItemsGrid"></div>
 
-          <div class="row" style="flex-wrap:wrap;margin-top:8px">
+          <div class="menu-tally">
+            <span class="small" style="font-weight:800" id="menuTallyText">Selected from menu: 0 items (₹0.00)</span>
             <button id="loadMenu" class="secondary sm">＋ Add entire menu to bill</button>
-            <span class="muted small" id="sheetSyncStatus"></span>
           </div>
+          <div class="muted small" id="sheetSyncStatus" style="margin-top:6px"></div>
 
           <!-- HIDDEN ADMIN PANEL -->
           <div class="admin-panel hidden" id="adminPanel">
@@ -321,7 +334,7 @@ textarea.code-box{
           <button id="addPerson">Add</button>
         </div>
         <div class="people" id="peopleList"></div>
-        <p class="muted small" style="margin:10px 0 0">Add everyone who shared the meal. Tap people chips on each dish below.</p>
+        <p class="muted small" style="margin:10px 0 0">Add everyone who shared the meal. Nobody is auto-selected—tap the person chips on each dish below.</p>
       </section>
 
       <!-- STEP 3 -->
@@ -336,9 +349,9 @@ textarea.code-box{
           <input id="newItemPrice" type="number" min="0" step=".01" placeholder="Price ₹">
           <button id="addItem">Add item</button>
         </div>
-        <p class="muted small">Price is per unit. Tap names below each dish to assign who shared it.</p>
+        <p class="muted small">Price is per unit. Select who ate each dish by tapping their name chips below.</p>
         <div id="itemsList"></div>
-        <div class="hint">For shared dishes, select everyone who ate it. Switch to “Custom shares” for unequal portions.</div>
+        <div class="hint">Everyone starts unselected on every dish. Tap the people who ate that dish, or switch to “Custom shares” for unequal portions.</div>
       </section>
 
       <!-- STEP 4: GST ONLY -->
@@ -398,7 +411,7 @@ textarea.code-box{
   // PASTE YOUR DEPLOYED GOOGLE APPS SCRIPT WEB APP URL BELOW (ends in /exec)
   // Once pasted here, EVERY user gets live menus & prices automatically!
   // =========================================================================
-  const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwOhLbCRe8wB54-aF6nG1FwME17PQRJ-84q63Wmfp8WsynBBN5qSSU4Az5ZL5BreXEY/exec';
+  const DEFAULT_SCRIPT_URL = '';
 
   const memStore = {};
   const safeStorage = {
@@ -566,6 +579,10 @@ textarea.code-box{
     renderMenuSection();
   }
 
+  function findBillItemForDish(dish){
+    return items.find(x => x.name.toLowerCase() === dish[0].toLowerCase() && Number(x.price) === Number(dish[2]));
+  }
+
   function renderMenuSection(){
     const keys = Object.keys(menus);
     if (!keys.length) {
@@ -585,14 +602,25 @@ textarea.code-box{
     if (!filtered.length) {
       $('menuItemsGrid').innerHTML = `<p class="muted small" style="grid-column:1/-1;margin:4px 0">No dishes found in this menu.${adminUnlocked ? ' Add dishes below.' : ''}</p>`;
     } else {
-      $('menuItemsGrid').innerHTML = filtered.map(({ it, idx }) => `
-        <div class="dish-card">
+      $('menuItemsGrid').innerHTML = filtered.map(({ it, idx }) => {
+        const existing = findBillItemForDish(it);
+        const qty = existing ? existing.qty : 0;
+        const lineAmt = qty * Number(it[2]);
+        return `
+        <div class="dish-card ${qty > 0 ? 'in-bill' : ''}">
           <div class="dish-top">
             <span class="dish-name">${esc(it[0])}</span>
             <span class="dish-price">${money(it[2])}</span>
           </div>
+          ${qty > 0 ? `<div class="dish-sub">Count: ${qty} × ${money(it[2])} = ${money(lineAmt)}</div>` : ''}
           <div class="dish-actions">
-            <button class="sm" data-pick-dish="${idx}">＋ Add</button>
+            ${qty > 0 ? `
+              <div class="qty-stepper">
+                <button class="secondary" data-dec-dish="${idx}" title="Decrease count">−</button>
+                <span class="qty-val">${qty}</span>
+                <button data-pick-dish="${idx}" title="Increase count">＋</button>
+              </div>
+            ` : `<button class="sm" data-pick-dish="${idx}">＋ Add</button>`}
             ${adminUnlocked ? `
               <div style="display:flex;gap:5px">
                 <button class="secondary sm" data-edit-dish="${idx}" title="Edit Dish">✎</button>
@@ -601,7 +629,7 @@ textarea.code-box{
             ` : ''}
           </div>
         </div>
-      `).join('');
+      `;}).join('');
     }
 
     $('menuItemsGrid').querySelectorAll('[data-pick-dish]').forEach(btn => {
@@ -609,15 +637,30 @@ textarea.code-box{
         const idx = +btn.dataset.pickDish;
         const dish = menus[currentMenuKey].items[idx];
         if (!dish) return;
-        const existing = items.find(x => x.name.toLowerCase() === dish[0].toLowerCase() && Number(x.price) === Number(dish[2]));
+        const existing = findBillItemForDish(dish);
         if (existing) {
           existing.qty += 1;
           render();
         } else {
-          addItem(dish[0], 1, dish[2], people.slice());
+          // Everybody starts unselected ([])
+          addItem(dish[0], 1, dish[2], []);
         }
-        btn.textContent = '✓ Added';
-        setTimeout(() => { if (btn) btn.textContent = '＋ Add'; }, 650);
+      };
+    });
+
+    $('menuItemsGrid').querySelectorAll('[data-dec-dish]').forEach(btn => {
+      btn.onclick = () => {
+        const idx = +btn.dataset.decDish;
+        const dish = menus[currentMenuKey].items[idx];
+        if (!dish) return;
+        const existing = findBillItemForDish(dish);
+        if (!existing) return;
+        if (existing.qty > 1) {
+          existing.qty -= 1;
+        } else {
+          items = items.filter(x => x.id !== existing.id);
+        }
+        render();
       };
     });
 
@@ -670,7 +713,23 @@ textarea.code-box{
   $('loadMenu').onclick = () => {
     const list = menus[currentMenuKey]?.items || [];
     if (!list.length) return;
-    list.forEach(x => addItem(x[0], 1, x[2], people.slice()));
+    list.forEach(x => {
+      const existing = findBillItemForDish(x);
+      if (existing) {
+        existing.qty += 1;
+      } else {
+        items.push({
+          id: nextId++,
+          name: x[0],
+          qty: 1,
+          price: Math.max(0, +x[2] || 0),
+          mode: 'equal',
+          assigned: [],
+          shares: {}
+        });
+      }
+    });
+    render();
   };
 
   // Admin Controls (all auto-sync to Google Sheet if linked)
@@ -896,7 +955,7 @@ textarea.code-box{
       qty: Math.max(1, +qty || 1),
       price: Math.max(0, +price || 0),
       mode: 'equal',
-      assigned: assigned || [],
+      assigned: Array.isArray(assigned) ? assigned : [],
       shares: {}
     });
     render();
@@ -923,7 +982,8 @@ textarea.code-box{
   }
 
   function renderItems(){
-    $('itemCount').textContent = items.length + ' item' + (items.length === 1 ? '' : 's');
+    const totalCount = items.reduce((s, it) => s + it.qty, 0);
+    $('itemCount').textContent = totalCount + ' item' + (totalCount === 1 ? '' : 's');
     $('itemsList').innerHTML = items.map(it => {
       const total = it.qty * it.price;
       return `
@@ -1009,6 +1069,7 @@ textarea.code-box{
 
   function calculate(){
     const sub = items.reduce((s, it) => s + it.qty * it.price, 0);
+    const totalCount = items.reduce((s, it) => s + it.qty, 0);
     const gst = Math.max(0, +$('gstCharge').value || 0);
     const raw = Object.fromEntries(people.map(p => [p, 0]));
     const unassigned = [];
@@ -1031,6 +1092,8 @@ textarea.code-box{
     const grand = sub + gst;
     const valid = people.length > 0 && items.length > 0 && !unassigned.length;
 
+    $('billSummaryPill').textContent = `${totalCount} item${totalCount === 1 ? '' : 's'} · ${money(sub)}`;
+    $('menuTallyText').textContent = `Bill items: ${totalCount} (${money(sub)})`;
     $('subtotal').textContent = money(sub);
     $('gstAmount').textContent = money(gst);
     $('grandTotal').textContent = money(grand);
@@ -1042,7 +1105,7 @@ textarea.code-box{
       : !items.length
         ? 'Add at least one item.'
         : unassigned.length
-          ? 'Assign ' + unassigned.join(', ') + ' to at least one person.'
+          ? 'Select who ate: ' + unassigned.join(', ')
           : 'Split calculated! GST is distributed proportionally to each person’s items.';
     valEl.classList.toggle('ok', valid);
 
@@ -1060,6 +1123,7 @@ textarea.code-box{
   }
 
   function render(){
+    renderMenuSection();
     renderPeople();
     renderItems();
     calculate();
@@ -1074,7 +1138,6 @@ textarea.code-box{
       return;
     }
     people.push(n);
-    if (people.length === 1) items.forEach(it => { if (!it.assigned.length) it.assigned.push(n); });
     $('personName').value = '';
     render();
   };
@@ -1088,7 +1151,8 @@ textarea.code-box{
       showNoticeModal('Missing Fields', 'Enter an item name and unit price.');
       return;
     }
-    addItem(n, q, p, people.slice());
+    // Everybody starts unselected ([])
+    addItem(n, q, p, []);
     $('newItemName').value = '';
     $('newItemQty').value = 1;
     $('newItemPrice').value = '';
@@ -1205,7 +1269,8 @@ textarea.code-box{
         }
       });
       if (found.length) {
-        found.forEach(x => addItem(x[0], x[1], x[2], people.slice()));
+        // Everybody starts unselected ([])
+        found.forEach(x => addItem(x[0], x[1], x[2], []));
         $('ocrStatus').textContent = `OCR found ${found.length} item(s). Verify names and prices below.`;
       } else {
         $('ocrStatus').textContent = 'Could not confidently detect item lines. Raw text: ' + result.data.text.slice(0, 300);
@@ -1216,10 +1281,8 @@ textarea.code-box{
   });
 
   // Initial Render & Auto-Pull latest menu from Google Sheet
-  renderMenuSection();
   render();
   if (scriptUrl) syncFromSheet(true);
 })();
 </script>
 </body>
-</html>
