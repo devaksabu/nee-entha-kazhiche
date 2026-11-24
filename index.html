@@ -95,7 +95,7 @@ input:focus,select:focus{border-color:var(--green);box-shadow:3px 3px 0 var(--gr
 
 /* Menu Catalog & Admin */
 .menu-toolbar{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px}
-.menu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin:12px 0}
+.menu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin:12px 0}
 .dish-card{
   background:#2b353e;border:2px solid var(--line);border-radius:4px;padding:11px 12px;
   box-shadow:3px 3px 0 var(--line);display:flex;flex-direction:column;justify-content:space-between;gap:8px;
@@ -109,6 +109,7 @@ input:focus,select:focus{border-color:var(--green);box-shadow:3px 3px 0 var(--gr
 .qty-stepper button{min-height:28px;height:28px;width:28px;padding:0;font-size:14px;box-shadow:1px 1px 0 var(--line)}
 .qty-val{min-width:22px;text-align:center;font-weight:950;font-size:13px;color:var(--green)}
 .dish-sub{font-size:11.5px;font-weight:800;color:var(--green)}
+.admin-ctrl{display:flex;gap:5px}
 .menu-tally{
   display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;
   background:#202a32;border:2px solid var(--line);border-radius:4px;padding:10px 12px;margin-top:10px;
@@ -202,7 +203,75 @@ textarea.code-box{
   .itemedit input:first-child{grid-column:1/-1}
   .itemedit button{grid-column:1/-1}
   .admin-row{grid-template-columns:1fr}
-  .menu-grid{grid-template-columns:1fr}
+
+  /* Perfectly square 2-column menu cards on mobile to minimize scrolling */
+  .menu-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:10px;
+  }
+  .dish-card{
+    aspect-ratio:1/1;
+    padding:10px;
+    gap:4px;
+    overflow:hidden;
+  }
+  .dish-top{
+    flex-direction:column;
+    align-items:flex-start;
+    gap:5px;
+  }
+  .dish-name{
+    font-size:12.5px;
+    line-height:1.2;
+    display:-webkit-box;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+  }
+  .dish-price{
+    font-size:11.5px;
+    padding:2px 6px;
+  }
+  .dish-sub{
+    font-size:10.5px;
+    line-height:1.15;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .dish-actions{
+    width:100%;
+    flex-direction:column;
+    align-items:stretch;
+    gap:5px;
+    margin-top:auto;
+  }
+  .dish-actions > button{
+    width:100%;
+    min-height:32px;
+    padding:5px 6px;
+    font-size:11.5px;
+  }
+  .qty-stepper{
+    width:100%;
+    justify-content:space-between;
+    padding:2px 4px;
+  }
+  .qty-stepper button{
+    width:30px;
+    height:26px;
+    min-height:26px;
+  }
+  .admin-ctrl{
+    width:100%;
+  }
+  .admin-ctrl button{
+    flex:1;
+    min-height:26px;
+    height:26px;
+    padding:2px 4px;
+    font-size:11px;
+  }
 }
 </style>
 </head>
@@ -608,7 +677,7 @@ textarea.code-box{
             <span class="dish-name">${esc(it[0])}</span>
             <span class="dish-price">${money(it[2])}</span>
           </div>
-          ${qty > 0 ? `<div class="dish-sub">Count: ${qty} × ${money(it[2])} = ${money(lineAmt)}</div>` : ''}
+          ${qty > 0 ? `<div class="dish-sub">${qty} × ${money(it[2])} = ${money(lineAmt)}</div>` : ''}
           <div class="dish-actions">
             ${qty > 0 ? `
               <div class="qty-stepper">
@@ -618,7 +687,7 @@ textarea.code-box{
               </div>
             ` : `<button class="sm" data-pick-dish="${idx}">＋ Add</button>`}
             ${adminUnlocked ? `
-              <div style="display:flex;gap:5px">
+              <div class="admin-ctrl">
                 <button class="secondary sm" data-edit-dish="${idx}" title="Edit Dish">✎</button>
                 <button class="ghost sm" data-del-dish="${idx}" title="Remove Dish">✕</button>
               </div>
