@@ -1144,25 +1144,29 @@ textarea.code-box{
       const total = it.qty * it.price;
       const assigned = it.assigned.filter(p => people.includes(p));
       if (!assigned.length) { unassigned.push(it.name); return; }
-      const itemLabel = `${it.qty} × ${it.name}`;
       if (it.mode === 'custom') {
         const weights = assigned.map(p => Math.max(0, +it.shares[p] || 0));
         const sum = weights.reduce((a, b) => a + b, 0);
         if (sum > 0) {
           assigned.forEach((p, i) => {
             raw[p] += total * weights[i] / sum;
-            if (weights[i] > 0) ate[p].push(itemLabel);
+            if (weights[i] > 0) {
+              const personQty = Math.round(it.qty * weights[i] / sum) || 1;
+              ate[p].push(`${it.name} ${personQty}`);
+            }
           });
         } else {
+          const personQty = Math.max(1, Math.round(it.qty / assigned.length));
           assigned.forEach(p => {
             raw[p] += total / assigned.length;
-            ate[p].push(itemLabel);
+            ate[p].push(`${it.name} ${personQty}`);
           });
         }
       } else {
+        const personQty = Math.max(1, Math.round(it.qty / assigned.length));
         assigned.forEach(p => {
           raw[p] += total / assigned.length;
-          ate[p].push(itemLabel);
+          ate[p].push(`${it.name} ${personQty}`);
         });
       }
     });
@@ -1192,7 +1196,7 @@ textarea.code-box{
       ? people.map(p => `
         <div class="personsum">
           <div class="top"><span>${esc(p)}</span></div>
-          <div class="ate-list">${ate[p].length ? esc(ate[p].join(' · ')) : '<span class="muted">No items assigned yet</span>'}</div>
+          <div class="ate-list">${ate[p].length ? ate[p].map(x => `<div>${esc(x)}</div>`).join('') : '<span class="muted">No items assigned yet</span>'}</div>
           <div class="bar"><span style="width:${sub ? Math.max(0, Math.min(100, raw[p] / sub * 100)) : 0}%"></span></div>
           <div class="muted small">${sub ? (raw[p] / sub * 100).toFixed(1) : '0.0'}% of food subtotal</div>
         </div>
@@ -1277,7 +1281,8 @@ textarea.code-box{
     const lines = [
       'NEE.ENTHA.KAZHICHE — What Everyone Had',
       '',
-      ...people.map(p => `${p}: ${c.ate[p].length ? c.ate[p].join(', ') : 'Nothing'}`)
+      ...people.map(p => `${p}:
+${c.ate[p].length ? c.ate[p].join('\n') : 'Nothing'}`)
     ];
     const text = lines.join('\n');
     if (navigator.clipboard && navigator.clipboard.writeText) {
