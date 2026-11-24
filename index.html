@@ -235,10 +235,6 @@ textarea.code-box{
           <h2 class="step" style="margin:0"><span class="num">1</span> Start your bill</h2>
           <span class="pill" id="billSummaryPill">0 items · ₹0.00</span>
         </div>
-        <div class="field">
-          <label for="billName">Bill / restaurant name</label>
-          <input id="billName" placeholder="e.g. Evening chai at Café">
-        </div>
         <div class="tabs" id="modeTabs">
           <button data-mode="upload">Upload receipt</button>
           <button class="active" data-mode="menu">Choose from menu</button>
@@ -272,7 +268,7 @@ textarea.code-box{
           <div class="menu-grid" id="menuItemsGrid"></div>
 
           <div class="menu-tally">
-            <span class="small" style="font-weight:800" id="menuTallyText">Selected from menu: 0 items (₹0.00)</span>
+            <span class="small" style="font-weight:800" id="menuTallyText">Bill items: 0 (₹0.00)</span>
             <button id="loadMenu" class="secondary sm">＋ Add entire menu to bill</button>
           </div>
           <div class="muted small" id="sheetSyncStatus" style="margin-top:6px"></div>
@@ -642,7 +638,6 @@ textarea.code-box{
           existing.qty += 1;
           render();
         } else {
-          // Everybody starts unselected ([])
           addItem(dish[0], 1, dish[2], []);
         }
       };
@@ -1151,7 +1146,6 @@ textarea.code-box{
       showNoticeModal('Missing Fields', 'Enter an item name and unit price.');
       return;
     }
-    // Everybody starts unselected ([])
     addItem(n, q, p, []);
     $('newItemName').value = '';
     $('newItemQty').value = 1;
@@ -1182,7 +1176,6 @@ textarea.code-box{
       box.querySelector('#rstConfirm').onclick = () => {
         items = [];
         people = [];
-        $('billName').value = '';
         $('gstCharge').value = 0;
         render();
         close();
@@ -1197,7 +1190,7 @@ textarea.code-box{
       return;
     }
     const lines = [
-      'NEE.ENTHA.KAZHICHE — ' + ($('billName').value || 'Bill Split'),
+      'NEE.ENTHA.KAZHICHE — Bill Split',
       'Total: ' + money(c.total),
       '',
       ...people.map(p => p + ': ' + money(c.totals[p]))
@@ -1220,7 +1213,6 @@ textarea.code-box{
     }
     const rows = [
       ['App', 'NEE.ENTHA.KAZHICHE'],
-      ['Bill', $('billName').value],
       ['Subtotal', c.sub.toFixed(2)],
       ['GST', c.gst.toFixed(2)],
       ['Total', c.total.toFixed(2)],
@@ -1269,7 +1261,6 @@ textarea.code-box{
         }
       });
       if (found.length) {
-        // Everybody starts unselected ([])
         found.forEach(x => addItem(x[0], x[1], x[2], []));
         $('ocrStatus').textContent = `OCR found ${found.length} item(s). Verify names and prices below.`;
       } else {
@@ -1286,3 +1277,4 @@ textarea.code-box{
 })();
 </script>
 </body>
+</html>
