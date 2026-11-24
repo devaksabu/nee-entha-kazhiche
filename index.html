@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5">
+<title>NEE.ENTHA.KAZHICHE — Split bills fairly</title>
+<style>
+:root{
+  --bg:#252d35;--card:#333e48;--ink:#f2f0e7;--muted:#b5c0c5;--line:#111920;
+  --green:#d5f05b;--green2:#48543a;--orange:#e9b85c;--shadow:6px 6px 0 #111920;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{
+  margin:0;
+  background-color:var(--bg);
+  background-image:radial-gradient(rgba(220,229,229,0.11) 1px,transparent 1px);
+  background-size:17px 17px;
+  color:var(--ink);
+  font:15px/1.45 'JetBrains Mono','IBM Plex Mono','SFMono-Regular',Consolas,'Liberation Mono',ui-monospace,monospace;
+  overflow-x:hidden;
+}
+button,input,select,textarea{font:inherit}
+.wrap{max-width:1160px;margin:auto;padding:20px 18px 90px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:3px solid var(--line);padding-bottom:15px;margin-bottom:22px}
+.brand{display:flex;align-items:center;gap:11px;font-weight:950;font-size:clamp(18px,3.2vw,24px);letter-spacing:-1px;text-transform:uppercase;word-break:break-word}
+.logo{
+  background:var(--green);color:#20252a;border:2.5px solid var(--line);border-radius:8px;
+  width:42px;height:42px;min-width:42px;display:grid;place-items:center;font-size:21px;font-weight:950;
+  box-shadow:3px 3px 0 var(--line);cursor:pointer;user-select:none;transition:transform .1s;
+}
+.logo:active{transform:scale(.94)}
+.tag{color:#c1cbd0;font-weight:800;text-transform:uppercase;letter-spacing:.9px;font-size:11px;text-align:right}
+.header-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.admin-badge{
+  background:#e58b70;color:#20252a;border:2px solid var(--line);border-radius:4px;
+  padding:4px 8px;font-size:11px;font-weight:950;text-transform:uppercase;box-shadow:2px 2px 0 var(--line);
+}
+
+.hero{
+  display:flex;justify-content:space-between;gap:18px;align-items:center;
+  background:#d9bd65;border:3px solid var(--line);box-shadow:7px 7px 0 var(--line);
+  padding:24px 26px;margin:20px 0 28px;color:#20252a;
+}
+.hero h1{font-weight:950;text-transform:uppercase;letter-spacing:-1.8px;line-height:.98;font-size:clamp(28px,4.5vw,48px);margin:0;color:#20252a;max-width:690px}
+.hero p{color:#34352f;font-weight:650;margin:11px 0 0;font-size:14px}
+
+.layout{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(290px,.85fr);gap:20px;align-items:start}
+.card{
+  background:var(--card);border:2.5px solid var(--line);border-radius:5px;
+  box-shadow:5px 5px 0 var(--line);padding:20px;margin-bottom:20px;
+}
+.card h2{font-weight:900;text-transform:uppercase;letter-spacing:-.4px;font-size:16px;margin:0 0 15px;color:#f2f0e7}
+.step{display:flex;align-items:center;gap:9px}
+.num{
+  background:var(--green);color:#20252a;border:2px solid var(--line);border-radius:5px;
+  width:29px;height:29px;min-width:29px;display:grid;place-items:center;font-size:12px;font-weight:950;
+}
+
+button{
+  cursor:pointer;background:var(--green);color:#20252a;border:2px solid var(--line);border-radius:5px;
+  padding:11px 14px;min-height:42px;font-weight:900;text-transform:uppercase;letter-spacing:.2px;
+  box-shadow:3px 3px 0 var(--line);transition:transform .12s,box-shadow .12s;
+}
+button:hover{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--line)}
+button:active{transform:translate(3px,3px);box-shadow:none}
+button.secondary{background:#46535e;color:#f2f0e7;border:2px solid var(--line)}
+button.ghost{background:#e58b70;color:#20252a;border:1.5px solid var(--line);box-shadow:2px 2px 0 var(--line);padding:6px 9px;min-height:34px}
+button.sm{padding:6px 10px;min-height:34px;font-size:12px}
+
+.tabs{display:flex;background:#26313a;border:2px solid var(--line);border-radius:5px;padding:5px;gap:6px;margin-bottom:16px}
+.tabs button{flex:1;border:1.5px solid transparent;box-shadow:none;background:transparent;color:#c0cbd0;border-radius:3px;padding:9px 8px;font-size:12px}
+.tabs button:hover{transform:none;box-shadow:none;border-color:var(--line)}
+.tabs button.active{background:var(--green);color:#20252a;border:2px solid var(--line);box-shadow:2px 2px 0 var(--line)}
+
+label{display:block;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.4px;color:#f2f0e7;margin:0 0 6px}
+input,select{
+  width:100%;background:#202a32;color:#f2f0e7;border:2px solid var(--line);border-radius:4px;
+  padding:11px 12px;min-height:42px;font-weight:650;outline:none;
+}
+input::placeholder{color:#8f9da5;opacity:1}
+input:focus,select:focus{border-color:var(--green);box-shadow:3px 3px 0 var(--green)}
+
+.field{margin-bottom:12px}
+.row{display:flex;gap:10px;align-items:center}
+.row>*{min-width:0}
+.grow{flex:1}
+.muted{color:var(--muted)}
+.small{font-size:12px}
+.hidden{display:none!important}
+
+.filebox{background:#41465b;border:2px dashed #e3d8ff;border-radius:5px;padding:18px;text-align:center;color:#f2f0e7}
+.filebox input{border:0;background:transparent;box-shadow:none;padding:8px}
+.hint{background:#3d4a35;border:2px solid #c4df70;border-radius:4px;padding:12px;color:#e5efcf;font-size:12.5px;font-weight:600;margin-top:11px}
+
+/* Menu Catalog & Admin */
+.menu-toolbar{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px}
+.menu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin:12px 0}
+.dish-card{
+  background:#2b353e;border:2px solid var(--line);border-radius:4px;padding:11px 12px;
+  box-shadow:3px 3px 0 var(--line);display:flex;flex-direction:column;justify-content:space-between;gap:8px;
+}
+.dish-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.dish-name{font-weight:850;font-size:13.5px;color:#f2f0e7;line-height:1.3}
+.dish-price{background:var(--green);color:#20252a;border:1.5px solid var(--line);padding:2px 7px;border-radius:3px;font-weight:950;font-size:12px;white-space:nowrap}
+.dish-actions{display:flex;gap:6px;align-items:center;justify-content:space-between;margin-top:2px}
+.admin-panel{
+  background:#28313a;border:2.5px solid #e58b70;border-radius:5px;padding:14px;margin-top:14px;
+  box-shadow:4px 4px 0 var(--line);
+}
+.admin-panel h3{margin:0 0 10px;font-size:13px;text-transform:uppercase;color:#e58b70;letter-spacing:.5px}
+.admin-row{display:grid;grid-template-columns:1fr 110px auto;gap:8px;margin-top:8px}
+.sync-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px;padding-top:10px;border-top:1.5px dashed #556370}
+
+/* People & Items */
+.people{display:flex;flex-wrap:wrap;gap:8px;margin-top:13px}
+.person{
+  display:flex;align-items:center;gap:7px;background:#46535e;color:#f2f0e7;
+  border:2px solid var(--line);border-radius:4px;padding:5px 8px 5px 5px;box-shadow:2px 2px 0 var(--line);font-weight:800;
+}
+.avatar{
+  width:27px;height:27px;border-radius:4px;display:grid;place-items:center;
+  background:#e58b70;color:#20252a;border:1.5px solid var(--line);font-size:11px;font-weight:900;
+}
+.item{background:#3b4752;border:2px solid var(--line);border-radius:4px;padding:13px;box-shadow:3px 3px 0 var(--line);margin-top:13px}
+.itemtop{display:flex;align-items:center;gap:10px}
+.itemtop strong{flex:1;font-weight:900;word-break:break-word}
+.price{background:var(--green);color:#20252a;border:1.5px solid var(--line);padding:4px 8px;border-radius:3px;font-weight:900;white-space:nowrap}
+.itemmeta{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.itemmeta select{max-width:190px;padding:8px}
+.assign{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.chip{
+  background:#26323b;color:#e6e9e5;border:1.5px solid var(--line);border-radius:4px;
+  padding:7px 10px;min-height:36px;font-size:12px;font-weight:850;box-shadow:2px 2px 0 var(--line);
+}
+.chip.on{background:var(--green);color:#20252a;border-color:var(--line)}
+.itemedit{display:grid;grid-template-columns:1fr 86px 105px auto;gap:8px;margin-top:9px}
+.itemedit input{padding:9px}
+
+/* Summary */
+.sticky{position:sticky;top:16px}
+.summaryline{display:flex;justify-content:space-between;padding:8px 0;color:#cbd3d4;font-weight:650}
+.summaryline.total{border-top:2px solid #aab5b9;margin-top:7px;padding-top:14px;font-size:21px;font-weight:900;color:#f2f0e7}
+.personsum{padding:12px 0;border-bottom:1.5px solid #687681}
+.personsum:last-child{border:0}
+.personsum .top{display:flex;justify-content:space-between;font-weight:900;color:#f2f0e7}
+.bar{height:10px;background:#202a32;border:1.5px solid var(--line);border-radius:0;margin-top:8px;overflow:hidden}
+.bar span{display:block;height:100%;background:#b7a1ff}
+.notice{padding:11px 13px;border-radius:4px;background:#e9bd5f;color:#20252a;border:2px solid var(--line);font-size:12px;font-weight:750;margin-top:12px}
+#validation.ok{background:#3d4a35;color:#e5efcf;border:2px solid #c4df70}
+.pill{background:#e9bd5f;color:#20252a;border:1.5px solid var(--line);border-radius:3px;padding:4px 8px;font-size:11px;font-weight:950;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+footer{text-align:center;color:#c1cbd0;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-top:28px}
+
+/* Mobile Sticky Bottom Bar */
+.mobile-bar{
+  display:none;position:fixed;left:0;right:0;bottom:0;z-index:50;
+  background:#202a32;border-top:3px solid var(--line);padding:10px 16px;
+  align-items:center;justify-content:space-between;gap:12px;box-shadow:0 -4px 16px rgba(0,0,0,.45);
+}
+.mobile-bar .mb-label{font-size:10px;text-transform:uppercase;color:var(--muted);font-weight:800}
+.mobile-bar .mb-total{font-size:18px;font-weight:950;color:var(--green)}
+
+/* Custom Modal */
+.modal-backdrop{
+  position:fixed;inset:0;background:rgba(17,25,32,.78);z-index:100;
+  display:grid;place-items:center;padding:16px;
+}
+.modal-box{
+  background:var(--card);border:3px solid var(--line);box-shadow:7px 7px 0 var(--line);
+  border-radius:5px;padding:20px;width:100%;max-width:440px;color:var(--ink);
+}
+.modal-box h3{margin:0 0 10px;text-transform:uppercase;font-size:16px}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
+textarea.code-box{
+  width:100%;height:180px;background:#1a2229;color:#d5f05b;border:2px solid var(--line);
+  border-radius:4px;padding:10px;font-size:11px;resize:vertical;
+}
+
+@media(max-width:860px){
+  .layout{grid-template-columns:1fr}
+  .sticky{position:static}
+  .hero{flex-direction:column;align-items:flex-start;padding:20px;box-shadow:5px 5px 0 var(--line)}
+  .hero button{width:100%}
+  .card{box-shadow:4px 4px 0 var(--line);padding:16px}
+  .mobile-bar{display:flex}
+  .wrap{padding:14px 12px 95px}
+}
+@media(max-width:560px){
+  header{flex-direction:column;align-items:flex-start}
+  .header-right{width:100%;justify-content:space-between}
+  .tabs{flex-direction:column}
+  .itemedit{grid-template-columns:1fr 1fr}
+  .itemedit input:first-child{grid-column:1/-1}
+  .itemedit button{grid-column:1/-1}
+  .charges-row{flex-direction:column;align-items:stretch}
+  .admin-row{grid-template-columns:1fr}
+  .menu-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="logo" id="secretLogo" title="NEE.ENTHA.KAZHICHE">÷</div>
+      <span>NEE.ENTHA.KAZHICHE</span>
+    </div>
+    <div class="header-right">
+      <span class="admin-badge hidden" id="adminBadge">ADMIN UNLOCKED</span>
+      <div class="tag">Eat together. Split fairly.</div>
+    </div>
+  </header>
+
+  <div class="hero">
+    <div>
+      <h1>Every bite, accounted for.</h1>
+      <p>Pick from saved café menus, scan a receipt, or add dishes manually. Split fairly in seconds.</p>
+    </div>
+    <button class="secondary" id="resetBtn">＋ New bill</button>
+  </div>
+
+  <div class="layout">
+    <main>
+      <!-- STEP 1 -->
+      <section class="card">
+        <h2 class="step"><span class="num">1</span> Start your bill</h2>
+        <div class="field">
+          <label for="billName">Bill / restaurant name</label>
+          <input id="billName" placeholder="e.g. Evening chai at Café" value="Dinner with friends">
+        </div>
+        <div class="tabs" id="modeTabs">
+          <button data-mode="upload">Upload receipt</button>
+          <button class="active" data-mode="menu">Choose from menu</button>
+          <button data-mode="manual">Enter manually</button>
+        </div>
+
+        <!-- UPLOAD PANEL -->
+        <div id="uploadPanel" class="hidden">
+          <div class="filebox">
+            <strong>📷 Upload a bill photo or PDF</strong>
+            <p class="muted small">Choose a clear receipt image. OCR runs in your browser; always review extracted prices.</p>
+            <input id="receiptFile" type="file" accept="image/*,.pdf">
+          </div>
+          <div class="hint" id="ocrStatus">Receipt upload is optional. You can also add or correct items manually below.</div>
+        </div>
+
+        <!-- MENU PANEL -->
+        <div id="menuPanel">
+          <div class="menu-toolbar">
+            <div class="grow">
+              <label for="menuSelect">Saved Café / Restaurant Menu</label>
+              <select id="menuSelect"></select>
+            </div>
+            <button id="syncSheetBtn" class="secondary sm" title="Fetch latest prices from Google Sheet">↻ Sync Sheet</button>
+          </div>
+
+          <div class="field">
+            <input id="menuSearch" placeholder="🔍 Filter dishes in this menu...">
+          </div>
+
+          <div class="menu-grid" id="menuItemsGrid"></div>
+
+          <div class="row" style="flex-wrap:wrap;margin-top:8px">
+            <button id="loadMenu" class="secondary sm">＋ Add entire menu to bill</button>
+            <span class="muted small" id="sheetSyncStatus"></span>
+          </div>
+
+          <!-- HIDDEN ADMIN PANEL -->
+          <div class="admin-panel hidden" id="adminPanel">
+            <div class="row" style="justify-content:space-between;flex-wrap:wrap">
+              <h3>🔒 Admin Menu &amp; Google Sheets Manager</h3>
+              <button id="lockAdminBtn" class="ghost sm">Lock Admin</button>
+            </div>
+
+            <div class="row" style="flex-wrap:wrap;margin-top:8px">
+              <button id="newMenuBtn" class="sm">＋ New Café Menu</button>
+              <button id="renameMenuBtn" class="secondary sm">✎ Rename Menu</button>
+              <button id="deleteMenuBtn" class="ghost sm">✕ Delete Menu</button>
+            </div>
+
+            <div style="margin-top:12px">
+              <label>Add Dish to Current Menu</label>
+              <div class="admin-row">
+                <input id="adminDishName" placeholder="Dish name (e.g. Pazham Pori)">
+                <input id="adminDishPrice" type="number" min="0" step=".01" placeholder="Price ₹">
+                <button id="adminAddDishBtn" class="sm">Save Dish</button>
+              </div>
+            </div>
+
+            <div class="sync-bar">
+              <div class="grow" style="min-width:210px">
+                <label for="scriptUrlInput">Google Apps Script Web App URL</label>
+                <input id="scriptUrlInput" placeholder="https://script.google.com/macros/s/.../exec">
+              </div>
+              <button id="saveUrlBtn" class="secondary sm">Save URL</button>
+              <button id="pushSheetBtn" class="sm">⬆ Push to Sheet</button>
+              <button id="showScriptBtn" class="secondary sm">Get Apps Script</button>
+            </div>
+
+            <div class="sync-bar">
+              <div class="grow" style="max-width:220px">
+                <label for="newPinInput">Change Admin PIN</label>
+                <input id="newPinInput" type="password" inputmode="numeric" maxlength="12" placeholder="New PIN">
+              </div>
+              <button id="changePinBtn" class="secondary sm">Update PIN</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- MANUAL PANEL -->
+        <div id="manualPanel" class="hidden">
+          <p class="muted small">Add items directly using the item editor in Step 3 below.</p>
+        </div>
+      </section>
+
+      <!-- STEP 2 -->
+      <section class="card">
+        <h2 class="step"><span class="num">2</span> Add people</h2>
+        <div class="row">
+          <div class="grow"><input id="personName" placeholder="Enter a name (e.g. Arun)" maxlength="30"></div>
+          <button id="addPerson">Add</button>
+        </div>
+        <div class="people" id="peopleList"></div>
+        <p class="muted small" style="margin:10px 0 0">Add everyone who shared the meal. Tap people chips on each dish below.</p>
+      </section>
+
+      <!-- STEP 3 -->
+      <section class="card">
+        <div class="row" style="justify-content:space-between">
+          <h2 class="step" style="margin:0"><span class="num">3</span> Add and assign items</h2>
+          <span class="pill" id="itemCount">0 items</span>
+        </div>
+        <div class="itemedit">
+          <input id="newItemName" placeholder="Item name">
+          <input id="newItemQty" type="number" min="1" value="1" aria-label="Quantity">
+          <input id="newItemPrice" type="number" min="0" step=".01" placeholder="Price ₹">
+          <button id="addItem">Add item</button>
+        </div>
+        <p class="muted small">Price is per unit. Tap names below each dish to assign who shared it.</p>
+        <div id="itemsList"></div>
+        <div class="hint">For shared dishes, select everyone who ate it. Switch to “Custom shares” for unequal portions.</div>
+      </section>
+
+      <!-- STEP 4 -->
+      <section class="card">
+        <h2 class="step"><span class="num">4</span> Taxes, charges &amp; discounts</h2>
+        <div class="row charges-row">
+          <div class="field grow"><label for="tax">Tax (%)</label><input id="tax" type="number" min="0" max="100" step=".01" value="5"></div>
+          <div class="field grow"><label for="service">Service charge (₹)</label><input id="service" type="number" min="0" step=".01" value="0"></div>
+          <div class="field grow"><label for="discount">Discount (₹)</label><input id="discount" type="number" min="0" step=".01" value="0"></div>
+        </div>
+        <p class="muted small">Tax is calculated on the item subtotal. Service charge and discount are distributed proportionally.</p>
+      </section>
+    </main>
+
+    <!-- SIDEBAR SUMMARY -->
+    <aside class="sticky" id="summarySection">
+      <section class="card">
+        <h2>Bill summary</h2>
+        <div class="summaryline"><span>Items subtotal</span><strong id="subtotal">₹0.00</strong></div>
+        <div class="summaryline"><span>Tax</span><strong id="taxAmount">₹0.00</strong></div>
+        <div class="summaryline"><span>Service charge</span><strong id="serviceAmount">₹0.00</strong></div>
+        <div class="summaryline"><span>Discount</span><strong id="discountAmount">−₹0.00</strong></div>
+        <div class="summaryline total"><span>Total</span><span id="grandTotal">₹0.00</span></div>
+        <div class="notice" id="validation">Add people and items to calculate the split.</div>
+      </section>
+
+      <section class="card">
+        <div class="row" style="justify-content:space-between;margin-bottom:10px">
+          <h2 style="margin:0">Who owes what</h2>
+          <span class="pill">Live split</span>
+        </div>
+        <div id="splitList"><p class="muted small">Your individual totals will appear here.</p></div>
+        <button id="shareBtn" class="secondary" style="width:100%;margin-top:14px">Copy split summary</button>
+        <button id="downloadBtn" style="width:100%;margin-top:8px">Download CSV summary</button>
+      </section>
+    </aside>
+  </div>
+
+  <footer>NEE.ENTHA.KAZHICHE · Eat together, split fairly.</footer>
+</div>
+
+<!-- MOBILE STICKY TOTAL BAR -->
+<div class="mobile-bar" id="mobileBar">
+  <div>
+    <div class="mb-label">Grand Total</div>
+    <div class="mb-total" id="mobileTotal">₹0.00</div>
+  </div>
+  <button class="sm" id="jumpSummaryBtn">Who owes what ↓</button>
+</div>
+
+<!-- CUSTOM MODAL -->
+<div class="modal-backdrop hidden" id="modalBackdrop">
+  <div class="modal-box" id="modalBox"></div>
+</div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+
+  // Safe storage wrapper (prevents blank screen in sandboxed iframes where localStorage throws)
+  const memStore = {};
+  const safeStorage = {
+    get(k){
+      try { return window.localStorage.getItem(k); }
+      catch(e){ return Object.prototype.hasOwnProperty.call(memStore, k) ? memStore[k] : null; }
+    },
+    set(k, v){
+      try { window.localStorage.setItem(k, v); }
+      catch(e){ memStore[k] = String(v); }
+    }
+  };
+
+  // Optional: Paste your deployed Google Apps Script Web App URL here so all users inherit it automatically
+  const DEFAULT_SCRIPT_URL = '';
+
+  const DEFAULT_MENUS = {
+    south: {
+      name: 'South Indian Café',
+      items: [
+        ['Masala Dosa', 1, 90],
+        ['Ghee Roast', 1, 110],
+        ['Idli (2 pcs)', 1, 45],
+        ['Medu Vada', 1, 40],
+        ['Filter Coffee', 1, 35],
+        ['Paneer Dosa', 1, 135]
+      ]
+    },
+    thattukada: {
+      name: 'Thattukada Evening',
+      items: [
+        ['Parotta', 1, 15],
+        ['Beef Fry', 1, 160],
+        ['Chicken Kondattam', 1, 180],
+        ['Omelette (Double)', 1, 40],
+        ['Sulaimani Tea', 1, 20],
+        ['Pazham Pori', 1, 20]
+      ]
+    },
+    pizza: {
+      name: 'Pizza & Pasta',
+      items: [
+        ['Margherita Pizza', 1, 299],
+        ['Farmhouse Pizza', 1, 399],
+        ['Garlic Bread', 1, 149],
+        ['White Sauce Pasta', 1, 249],
+        ['Cold Coffee', 1, 119]
+      ]
+    }
+  };
+
+  let menus = loadMenus();
+  let currentMenuKey = Object.keys(menus)[0] || 'south';
+  let adminUnlocked = false;
+  let adminPin = safeStorage.get('nek_admin_pin') || '19114';
+  let scriptUrl = safeStorage.get('nek_script_url') || DEFAULT_SCRIPT_URL;
+
+  let people = [];
+  let items = [];
+  let nextId = 1;
+
+  function loadMenus(){
+    try {
+      const raw = safeStorage.get('nek_menus_v1');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object' && Object.keys(parsed).length) return parsed;
+      }
+    } catch(e){}
+    return JSON.parse(JSON.stringify(DEFAULT_MENUS));
+  }
+
+  function saveMenus(){
+    safeStorage.set('nek_menus_v1', JSON.stringify(menus));
+  }
+
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const money = n => '₹' + (Number(n) || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+  // Custom Modal Helper
+  function openModal(html, onMount){
+    const back = $('modalBackdrop');
+    const box = $('modalBox');
+    box.innerHTML = html;
+    back.classList.remove('hidden');
+    if (onMount) onMount(box, closeModal);
+  }
+  function closeModal(){
+    $('modalBackdrop').classList.add('hidden');
+    $('modalBox').innerHTML = '';
+  }
+  $('modalBackdrop').addEventListener('click', e => {
+    if (e.target === $('modalBackdrop')) closeModal();
+  });
+
+  function showNoticeModal(title, message){
+    openModal(`
+      <h3>${esc(title)}</h3>
+      <p style="margin:0;line-height:1.5">${esc(message)}</p>
+      <div class="modal-actions">
+        <button id="mOkBtn">OK</button>
+      </div>
+    `, (box, close) => {
+      box.querySelector('#mOkBtn').onclick = close;
+    });
+  }
+
+  // Secret Admin Trigger: Tap logo 5 times within 2.5s OR press Ctrl+Shift+A / Alt+Shift+A
+  let logoTaps = [];
+  $('secretLogo').addEventListener('click', () => {
+    const now = Date.now();
+    logoTaps = logoTaps.filter(t => now - t < 2500);
+    logoTaps.push(now);
+    if (logoTaps.length >= 5) {
+      logoTaps = [];
+      promptAdminUnlock();
+    }
+  });
+
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.altKey) && e.shiftKey && e.key.toLowerCase() === 'a') {
+      e.preventDefault();
+      promptAdminUnlock();
+    }
+  });
+
+  function promptAdminUnlock(){
+    if (adminUnlocked) {
+      setAdminState(false);
+      showNoticeModal('Admin Locked', 'Admin mode has been locked.');
+      return;
+    }
+    openModal(`
+      <h3>🔒 Admin Access</h3>
+      <p class="muted small" style="margin:0 0 12px">Enter Admin PIN to edit café menus, prices, or Google Sheet sync.</p>
+      <input id="pinAttemptInput" type="password" inputmode="numeric" placeholder="Enter PIN">
+      <div class="modal-actions">
+        <button class="secondary" id="pinCancelBtn">Cancel</button>
+        <button id="pinSubmitBtn">Unlock</button>
+      </div>
+    `, (box, close) => {
+      const inp = box.querySelector('#pinAttemptInput');
+      setTimeout(() => inp.focus(), 50);
+      const verify = () => {
+        if (inp.value.trim() === adminPin) {
+          close();
+          setAdminState(true);
+          // Switch to Choose from menu tab automatically
+          document.querySelector('[data-mode="menu"]').click();
+        } else {
+          inp.value = '';
+          inp.placeholder = 'Incorrect PIN — try again';
+          inp.focus();
+        }
+      };
+      box.querySelector('#pinSubmitBtn').onclick = verify;
+      box.querySelector('#pinCancelBtn').onclick = close;
+      inp.addEventListener('keydown', ev => { if (ev.key === 'Enter') verify(); });
+    });
+  }
+
+  function setAdminState(unlocked){
+    adminUnlocked = unlocked;
+    $('adminBadge').classList.toggle('hidden', !unlocked);
+    $('adminPanel').classList.toggle('hidden', !unlocked);
+    if (unlocked) $('scriptUrlInput').value = scriptUrl;
+    renderMenuSection();
+  }
+
+  // Menu Rendering & Operations
+  function renderMenuSection(){
+    const keys = Object.keys(menus);
+    if (!keys.length) {
+      menus.default = { name: 'Café Menu', items: [] };
+    }
+    if (!menus[currentMenuKey]) currentMenuKey = Object.keys(menus)[0];
+
+    $('menuSelect').innerHTML = Object.keys(menus).map(k =>
+      `<option value="${esc(k)}" ${k === currentMenuKey ? 'selected' : ''}>${esc(menus[k].name)}</option>`
+    ).join('');
+
+    const q = ($('menuSearch').value || '').trim().toLowerCase();
+    const list = menus[currentMenuKey].items || [];
+    const filtered = list.map((it, idx) => ({ it, idx }))
+      .filter(({ it }) => !q || it[0].toLowerCase().includes(q));
+
+    if (!filtered.length) {
+      $('menuItemsGrid').innerHTML = `<p class="muted small" style="grid-column:1/-1;margin:4px 0">No dishes found in this menu.${adminUnlocked ? ' Add dishes below.' : ''}</p>`;
+    } else {
+      $('menuItemsGrid').innerHTML = filtered.map(({ it, idx }) => `
+        <div class="dish-card">
+          <div class="dish-top">
+            <span class="dish-name">${esc(it[0])}</span>
+            <span class="dish-price">${money(it[2])}</span>
+          </div>
+          <div class="dish-actions">
+            <button class="sm" data-pick-dish="${idx}">＋ Add</button>
+            ${adminUnlocked ? `
+              <div style="display:flex;gap:5px">
+                <button class="secondary sm" data-edit-dish="${idx}" title="Edit Dish">✎</button>
+                <button class="ghost sm" data-del-dish="${idx}" title="Remove Dish">✕</button>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    $('menuItemsGrid').querySelectorAll('[data-pick-dish]').forEach(btn => {
+      btn.onclick = () => {
+        const idx = +btn.dataset.pickDish;
+        const dish = menus[currentMenuKey].items[idx];
+        if (!dish) return;
+        // Increment qty if same dish & price already in bill
+        const existing = items.find(x => x.name.toLowerCase() === dish[0].toLowerCase() && Number(x.price) === Number(dish[2]));
+        if (existing) {
+          existing.qty += 1;
+          render();
+        } else {
+          addItem(dish[0], 1, dish[2], people.slice());
+        }
+        btn.textContent = '✓ Added';
+        setTimeout(() => { if (btn) btn.textContent = '＋ Add'; }, 650);
+      };
+    });
+
+    if (adminUnlocked) {
+      $('menuItemsGrid').querySelectorAll('[data-edit-dish]').forEach(btn => {
+        btn.onclick = () => {
+          const idx = +btn.dataset.editDish;
+          const dish = menus[currentMenuKey].items[idx];
+          openModal(`
+            <h3>Edit Menu Dish</h3>
+            <div class="field"><label>Dish Name</label><input id="edDishName" value="${esc(dish[0])}"></div>
+            <div class="field"><label>Price (₹)</label><input id="edDishPrice" type="number" min="0" step=".01" value="${dish[2]}"></div>
+            <div class="modal-actions">
+              <button class="secondary" id="edCancel">Cancel</button>
+              <button id="edSave">Save</button>
+            </div>
+          `, (box, close) => {
+            box.querySelector('#edCancel').onclick = close;
+            box.querySelector('#edSave').onclick = () => {
+              const nn = box.querySelector('#edDishName').value.trim();
+              const np = Math.max(0, +box.querySelector('#edDishPrice').value || 0);
+              if (nn) {
+                menus[currentMenuKey].items[idx] = [nn, 1, np];
+                saveMenus();
+                renderMenuSection();
+              }
+              close();
+            };
+          });
+        };
+      });
+
+      $('menuItemsGrid').querySelectorAll('[data-del-dish]').forEach(btn => {
+        btn.onclick = () => {
+          const idx = +btn.dataset.delDish;
+          menus[currentMenuKey].items.splice(idx, 1);
+          saveMenus();
+          renderMenuSection();
+        };
+      });
+    }
+  }
+
+  $('menuSelect').onchange = e => {
+    currentMenuKey = e.target.value;
+    renderMenuSection();
+  };
+  $('menuSearch').oninput = renderMenuSection;
+
+  $('loadMenu').onclick = () => {
+    const list = menus[currentMenuKey]?.items || [];
+    if (!list.length) return;
+    list.forEach(x => addItem(x[0], 1, x[2], people.slice()));
+  };
+
+  // Admin Controls
+  $('lockAdminBtn').onclick = () => setAdminState(false);
+
+  $('adminAddDishBtn').onclick = () => {
+    const name = $('adminDishName').value.trim();
+    const price = +$('adminDishPrice').value;
+    if (!name || isNaN(price) || price < 0) {
+      showNoticeModal('Missing Info', 'Please enter a valid dish name and price.');
+      return;
+    }
+    menus[currentMenuKey].items.push([name, 1, price]);
+    saveMenus();
+    $('adminDishName').value = '';
+    $('adminDishPrice').value = '';
+    renderMenuSection();
+  };
+
+  $('newMenuBtn').onclick = () => {
+    openModal(`
+      <h3>New Café Menu</h3>
+      <div class="field"><label>Café / Restaurant Name</label><input id="newMenuNameInp" placeholder="e.g. Paragon Restaurant"></div>
+      <div class="modal-actions">
+        <button class="secondary" id="nmCancel">Cancel</button>
+        <button id="nmCreate">Create</button>
+      </div>
+    `, (box, close) => {
+      box.querySelector('#nmCancel').onclick = close;
+      box.querySelector('#nmCreate').onclick = () => {
+        const label = box.querySelector('#newMenuNameInp').value.trim();
+        if (!label) return;
+        const key = label.toLowerCase().replace(/[^a-z0-9]+/g, '_') + '_' + Date.now().toString(36).slice(-3);
+        menus[key] = { name: label, items: [] };
+        currentMenuKey = key;
+        saveMenus();
+        renderMenuSection();
+        close();
+      };
+    });
+  };
+
+  $('renameMenuBtn').onclick = () => {
+    openModal(`
+      <h3>Rename Menu</h3>
+      <div class="field"><label>Menu Name</label><input id="renMenuInp" value="${esc(menus[currentMenuKey].name)}"></div>
+      <div class="modal-actions">
+        <button class="secondary" id="rmCancel">Cancel</button>
+        <button id="rmSave">Save</button>
+      </div>
+    `, (box, close) => {
+      box.querySelector('#rmCancel').onclick = close;
+      box.querySelector('#rmSave').onclick = () => {
+        const label = box.querySelector('#renMenuInp').value.trim();
+        if (label) {
+          menus[currentMenuKey].name = label;
+          saveMenus();
+          renderMenuSection();
+        }
+        close();
+      };
+    });
+  };
+
+  $('deleteMenuBtn').onclick = () => {
+    if (Object.keys(menus).length <= 1) {
+      showNoticeModal('Cannot Delete', 'At least one café menu must remain.');
+      return;
+    }
+    delete menus[currentMenuKey];
+    currentMenuKey = Object.keys(menus)[0];
+    saveMenus();
+    renderMenuSection();
+  };
+
+  $('changePinBtn').onclick = () => {
+    const np = $('newPinInput').value.trim();
+    if (np.length < 4) {
+      showNoticeModal('Invalid PIN', 'PIN must be at least 4 digits.');
+      return;
+    }
+    adminPin = np;
+    safeStorage.set('nek_admin_pin', adminPin);
+    $('newPinInput').value = '';
+    showNoticeModal('PIN Updated', 'Admin PIN updated on this device.');
+  };
+
+  // Google Sheets Sync
+  $('saveUrlBtn').onclick = () => {
+    scriptUrl = $('scriptUrlInput').value.trim();
+    safeStorage.set('nek_script_url', scriptUrl);
+    showNoticeModal('URL Saved', scriptUrl ? 'Google Apps Script URL saved.' : 'Google Sheet URL cleared.');
+  };
+
+  async function syncFromSheet(silent){
+    if (!scriptUrl) {
+      if (!silent) showNoticeModal('No Sheet Linked', 'Ask the Admin to configure the Google Apps Script Web App URL in Admin Mode.');
+      return;
+    }
+    $('sheetSyncStatus').textContent = 'Syncing from Google Sheet...';
+    try {
+      const res = await fetch(scriptUrl);
+      const data = await res.json();
+      if (data && data.menus && Object.keys(data.menus).length) {
+        menus = data.menus;
+        saveMenus();
+        renderMenuSection();
+        $('sheetSyncStatus').textContent = '✓ Synced with Google Sheet';
+      } else {
+        $('sheetSyncStatus').textContent = 'Sheet is empty (using local menus).';
+      }
+    } catch (err) {
+      $('sheetSyncStatus').textContent = 'Could not reach Sheet (using cached menus).';
+      if (!silent) showNoticeModal('Sync Error', 'Could not fetch from Google Sheet: ' + err.message);
+    }
+  }
+
+  $('syncSheetBtn').onclick = () => syncFromSheet(false);
+
+  $('pushSheetBtn').onclick = async () => {
+    const url = $('scriptUrlInput').value.trim() || scriptUrl;
+    if (!url) {
+      showNoticeModal('Missing URL', 'Paste your Google Apps Script Web App URL first.');
+      return;
+    }
+    scriptUrl = url;
+    safeStorage.set('nek_script_url', scriptUrl);
+    $('sheetSyncStatus').textContent = 'Pushing menus to Google Sheet...';
+    try {
+      await fetch(scriptUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'saveMenus', menus })
+      });
+      $('sheetSyncStatus').textContent = '✓ Pushed to Google Sheet';
+      showNoticeModal('Synced to Sheet', 'All café menus and prices were sent to your Google Sheet.');
+    } catch (err) {
+      $('sheetSyncStatus').textContent = 'Push failed.';
+      showNoticeModal('Push Error', err.message);
+    }
+  };
+
+  $('showScriptBtn').onclick = () => {
+    const code = `const SHEET_NAME = 'Menus';
+
+function getOrCreateSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(SHEET_NAME);
+    sheet.appendRow(['MenuID', 'MenuName', 'DishName', 'Price']);
+  }
+  return sheet;
+}
+
+function doGet() {
+  const sheet = getOrCreateSheet();
+  const rows = sheet.getDataRange().getValues();
+  const menus = {};
+  for (let i = 1; i < rows.length; i++) {
+    const [id, name, dish, price] = rows[i];
+    if (!id || !dish) continue;
+    if (!menus[id]) menus[id] = { name: String(name || id), items: [] };
+    menus[id].items.push([String(dish), 1, Number(price) || 0]);
+  }
+  return ContentService
+    .createTextOutput(JSON.stringify({ ok: true, menus }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  try {
+    const payload = JSON.parse(e.postData.contents);
+    const menus = payload.menus || {};
+    const sheet = getOrCreateSheet();
+    const out = [['MenuID', 'MenuName', 'DishName', 'Price']];
+    Object.keys(menus).forEach(id => {
+      const m = menus[id];
+      (m.items || []).forEach(it => {
+        out.push([id, m.name, it[0], Number(it[2]) || 0]);
+      });
+    });
+    sheet.clearContents();
+    sheet.getRange(1, 1, out.length, 4).setValues(out);
+    return ContentService
+      .createTextOutput(JSON.stringify({ ok: true }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ ok: false, error: err.message }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}`;
+    openModal(`
+      <h3>Google Apps Script (Code.gs)</h3>
+      <p class="muted small" style="margin:0 0 8px">1. Open Google Sheets → Extensions → Apps Script.<br>2. Paste this code, click Deploy → New deployment → Web app (Execute as: Me, Access: Anyone).<br>3. Copy the Web App URL into Admin Mode.</p>
+      <textarea class="code-box" readonly id="gasCodeArea">${esc(code)}</textarea>
+      <div class="modal-actions">
+        <button class="secondary" id="copyGasBtn">Copy Code</button>
+        <button id="closeGasBtn">Done</button>
+      </div>
+    `, (box, close) => {
+      box.querySelector('#closeGasBtn').onclick = close;
+      box.querySelector('#copyGasBtn').onclick = () => {
+        const ta = box.querySelector('#gasCodeArea');
+        ta.select();
+        navigator.clipboard?.writeText(ta.value);
+        box.querySelector('#copyGasBtn').textContent = '✓ Copied';
+      };
+    });
+  };
+
+  // Bill Items & People Logic
+  function addItem(name, qty, price, assigned){
+    items.push({
+      id: nextId++,
+      name,
+      qty: Math.max(1, +qty || 1),
+      price: Math.max(0, +price || 0),
+      mode: 'equal',
+      assigned: assigned || [],
+      shares: {}
+    });
+    render();
+  }
+
+  function renderPeople(){
+    $('peopleList').innerHTML = people.map((p, i) => `
+      <div class="person">
+        <span class="avatar">${esc(p.slice(0, 1).toUpperCase())}</span>
+        <span>${esc(p)}</span>
+        <button class="ghost" data-remove-person="${i}" title="Remove">×</button>
+      </div>
+    `).join('');
+    $('peopleList').querySelectorAll('[data-remove-person]').forEach(b => b.onclick = () => {
+      const idx = +b.dataset.removePerson;
+      const removed = people[idx];
+      people.splice(idx, 1);
+      items.forEach(it => {
+        it.assigned = it.assigned.filter(x => x !== removed);
+        delete it.shares[removed];
+      });
+      render();
+    });
+  }
+
+  function renderItems(){
+    $('itemCount').textContent = items.length + ' item' + (items.length === 1 ? '' : 's');
+    $('itemsList').innerHTML = items.map(it => {
+      const total = it.qty * it.price;
+      return `
+        <div class="item">
+          <div class="itemtop">
+            <strong>${esc(it.name)}</strong>
+            <span class="price">${money(total)}</span>
+            <button class="ghost" data-delete="${it.id}" title="Delete">✕</button>
+          </div>
+          <div class="itemmeta">
+            <span class="muted small">${it.qty} × ${money(it.price)}</span>
+            <select data-mode="${it.id}">
+              <option value="equal" ${it.mode === 'equal' ? 'selected' : ''}>Split equally</option>
+              <option value="custom" ${it.mode === 'custom' ? 'selected' : ''}>Custom shares</option>
+            </select>
+            <button class="ghost small" data-edit="${it.id}">Edit</button>
+          </div>
+          <div class="assign">
+            ${people.length
+              ? people.map(p => `<button class="chip ${it.assigned.includes(p) ? 'on' : ''}" data-assign="${it.id}" data-person="${esc(p)}">${it.assigned.includes(p) ? '✓ ' : ''}${esc(p)}</button>`).join('')
+              : '<span class="muted small">Add people in Step 2 to assign this dish.</span>'}
+          </div>
+          ${it.mode === 'custom' ? `
+            <div class="itemmeta">
+              ${people.filter(p => it.assigned.includes(p)).map(p => `
+                <label style="display:flex;align-items:center;gap:5px;margin:0">
+                  ${esc(p)}
+                  <input style="width:74px;padding:6px;min-height:36px" type="number" min="0" step=".01" placeholder="share" data-share="${it.id}" data-shareperson="${esc(p)}" value="${it.shares[p] ?? ''}">
+                </label>
+              `).join('')}
+            </div>
+            <p class="muted small" style="margin:6px 0 0">Enter relative weights (e.g. 2 and 1).</p>
+          ` : ''}
+        </div>
+      `;
+    }).join('');
+
+    $('itemsList').querySelectorAll('[data-delete]').forEach(b => b.onclick = () => {
+      items = items.filter(x => x.id !== +b.dataset.delete);
+      render();
+    });
+    $('itemsList').querySelectorAll('[data-assign]').forEach(b => b.onclick = () => {
+      const it = items.find(x => x.id === +b.dataset.assign);
+      const p = b.dataset.person;
+      it.assigned = it.assigned.includes(p) ? it.assigned.filter(x => x !== p) : [...it.assigned, p];
+      render();
+    });
+    $('itemsList').querySelectorAll('[data-mode]').forEach(s => s.onchange = () => {
+      const it = items.find(x => x.id === +s.dataset.mode);
+      it.mode = s.value;
+      render();
+    });
+    $('itemsList').querySelectorAll('[data-share]').forEach(inp => inp.oninput = () => {
+      const it = items.find(x => x.id === +inp.dataset.share);
+      it.shares[inp.dataset.shareperson] = Math.max(0, +inp.value || 0);
+      calculate();
+    });
+    $('itemsList').querySelectorAll('[data-edit]').forEach(b => b.onclick = () => {
+      const it = items.find(x => x.id === +b.dataset.edit);
+      openModal(`
+        <h3>Edit Bill Item</h3>
+        <div class="field"><label>Item Name</label><input id="biName" value="${esc(it.name)}"></div>
+        <div class="row">
+          <div class="field grow"><label>Quantity</label><input id="biQty" type="number" min="1" value="${it.qty}"></div>
+          <div class="field grow"><label>Unit Price (₹)</label><input id="biPrice" type="number" min="0" step=".01" value="${it.price}"></div>
+        </div>
+        <div class="modal-actions">
+          <button class="secondary" id="biCancel">Cancel</button>
+          <button id="biSave">Update</button>
+        </div>
+      `, (box, close) => {
+        box.querySelector('#biCancel').onclick = close;
+        box.querySelector('#biSave').onclick = () => {
+          it.name = box.querySelector('#biName').value.trim() || it.name;
+          it.qty = Math.max(1, +box.querySelector('#biQty').value || 1);
+          it.price = Math.max(0, +box.querySelector('#biPrice').value || 0);
+          render();
+          close();
+        };
+      });
+    });
+  }
+
+  function calculate(){
+    const sub = items.reduce((s, it) => s + it.qty * it.price, 0);
+    const tax = sub * Math.max(0, +$('tax').value || 0) / 100;
+    const service = Math.max(0, +$('service').value || 0);
+    const discount = Math.max(0, +$('discount').value || 0);
+    const raw = Object.fromEntries(people.map(p => [p, 0]));
+    const unassigned = [];
+
+    items.forEach(it => {
+      const total = it.qty * it.price;
+      const assigned = it.assigned.filter(p => people.includes(p));
+      if (!assigned.length) { unassigned.push(it.name); return; }
+      if (it.mode === 'custom') {
+        const weights = assigned.map(p => Math.max(0, +it.shares[p] || 0));
+        const sum = weights.reduce((a, b) => a + b, 0);
+        if (sum > 0) assigned.forEach((p, i) => raw[p] += total * weights[i] / sum);
+        else assigned.forEach(p => raw[p] += total / assigned.length);
+      } else {
+        assigned.forEach(p => raw[p] += total / assigned.length);
+      }
+    });
+
+    const totals = Object.fromEntries(people.map(p => [p, sub ? raw[p] * (1 + (tax + service - discount) / sub) : 0]));
+    const grand = Math.max(0, sub + tax + service - discount);
+    const valid = people.length > 0 && items.length > 0 && !unassigned.length;
+
+    $('subtotal').textContent = money(sub);
+    $('taxAmount').textContent = money(tax);
+    $('serviceAmount').textContent = money(service);
+    $('discountAmount').textContent = '−' + money(discount);
+    $('grandTotal').textContent = money(grand);
+    $('mobileTotal').textContent = money(grand);
+
+    const valEl = $('validation');
+    valEl.textContent = !people.length
+      ? 'Add at least one person.'
+      : !items.length
+        ? 'Add at least one item.'
+        : unassigned.length
+          ? 'Assign ' + unassigned.join(', ') + ' to at least one person.'
+          : discount > sub + tax + service
+            ? 'Discount is greater than the bill total.'
+            : 'Split calculated! Charges and discount are shared proportionally.';
+    valEl.classList.toggle('ok', valid);
+
+    $('splitList').innerHTML = people.length
+      ? people.map(p => `
+        <div class="personsum">
+          <div class="top"><span>${esc(p)}</span><span>${money(totals[p])}</span></div>
+          <div class="bar"><span style="width:${sub ? Math.max(0, Math.min(100, raw[p] / sub * 100)) : 0}%"></span></div>
+          <div class="muted small">${sub ? (raw[p] / sub * 100).toFixed(1) : '0.0'}% of food subtotal</div>
+        </div>
+      `).join('')
+      : '<p class="muted small">Add people to see the split.</p>';
+
+    return { sub, tax, service, discount, total: grand, raw, totals, valid, unassigned };
+  }
+
+  function render(){
+    renderPeople();
+    renderItems();
+    calculate();
+  }
+
+  // Event Bindings
+  $('addPerson').onclick = () => {
+    const n = $('personName').value.trim();
+    if (!n) return;
+    if (people.some(p => p.toLowerCase() === n.toLowerCase())) {
+      showNoticeModal('Duplicate Name', 'That person is already on the bill.');
+      return;
+    }
+    people.push(n);
+    // Auto-assign existing items if this is the first person added
+    if (people.length === 1) items.forEach(it => { if (!it.assigned.length) it.assigned.push(n); });
+    $('personName').value = '';
+    render();
+  };
+  $('personName').addEventListener('keydown', e => { if (e.key === 'Enter') $('addPerson').click(); });
+
+  $('addItem').onclick = () => {
+    const n = $('newItemName').value.trim();
+    const q = $('newItemQty').value;
+    const p = $('newItemPrice').value;
+    if (!n || p === '') {
+      showNoticeModal('Missing Fields', 'Enter an item name and unit price.');
+      return;
+    }
+    addItem(n, q, p, people.slice());
+    $('newItemName').value = '';
+    $('newItemQty').value = 1;
+    $('newItemPrice').value = '';
+  };
+
+  ['tax', 'service', 'discount'].forEach(id => $(id).addEventListener('input', calculate));
+
+  document.querySelectorAll('#modeTabs button').forEach(b => b.onclick = () => {
+    document.querySelectorAll('#modeTabs button').forEach(x => x.classList.toggle('active', x === b));
+    ['upload', 'menu', 'manual'].forEach(m => $(m + 'Panel').classList.toggle('hidden', m !== b.dataset.mode));
+  });
+
+  $('jumpSummaryBtn').onclick = () => {
+    $('summarySection').scrollIntoView({ behavior: 'smooth' });
+  };
+
+  $('resetBtn').onclick = () => {
+    openModal(`
+      <h3>Start a New Bill?</h3>
+      <p class="muted small" style="margin:0">Current items and people on this bill will be cleared. Saved café menus will remain untouched.</p>
+      <div class="modal-actions">
+        <button class="secondary" id="rstCancel">Cancel</button>
+        <button id="rstConfirm">Clear &amp; Start New</button>
+      </div>
+    `, (box, close) => {
+      box.querySelector('#rstCancel').onclick = close;
+      box.querySelector('#rstConfirm').onclick = () => {
+        items = [];
+        people = [];
+        $('billName').value = '';
+        $('tax').value = 5;
+        $('service').value = 0;
+        $('discount').value = 0;
+        render();
+        close();
+      };
+    });
+  };
+
+  $('shareBtn').onclick = () => {
+    const c = calculate();
+    if (!c.valid) {
+      showNoticeModal('Incomplete Bill', 'Please add people and assign every item first.');
+      return;
+    }
+    const lines = [
+      'NEE.ENTHA.KAZHICHE — ' + ($('billName').value || 'Bill Split'),
+      'Total: ' + money(c.total),
+      '',
+      ...people.map(p => p + ': ' + money(c.totals[p]))
+    ];
+    const text = lines.join('\n');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text)
+        .then(() => showNoticeModal('Copied!', 'Split summary copied to clipboard. Paste it into WhatsApp or group chat!'))
+        .catch(() => showNoticeModal('Copy Split Summary', text));
+    } else {
+      showNoticeModal('Copy Split Summary', text);
+    }
+  };
+
+  $('downloadBtn').onclick = () => {
+    const c = calculate();
+    if (!c.valid) {
+      showNoticeModal('Incomplete Bill', 'Please add people and assign every item first.');
+      return;
+    }
+    const rows = [
+      ['App', 'NEE.ENTHA.KAZHICHE'],
+      ['Bill', $('billName').value],
+      ['Subtotal', c.sub.toFixed(2)],
+      ['Tax', c.tax.toFixed(2)],
+      ['Service charge', c.service.toFixed(2)],
+      ['Discount', c.discount.toFixed(2)],
+      ['Total', c.total.toFixed(2)],
+      [],
+      ['Person', 'Owes'],
+      ...people.map(p => [p, c.totals[p].toFixed(2)])
+    ];
+    const csv = rows.map(r => r.map(v => '"' + String(v ?? '').replace(/"/g, '""') + '"').join(',')).join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.download = 'nee-entha-kazhiche-split.csv';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+
+  // Receipt OCR
+  $('receiptFile').addEventListener('change', async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.type === 'application/pdf') {
+      $('ocrStatus').textContent = 'PDF selected. Please upload a screenshot/photo of the receipt or enter items manually.';
+      return;
+    }
+    $('ocrStatus').textContent = 'Reading receipt… this may take a moment.';
+    try {
+      if (!window.Tesseract) {
+        await new Promise((resolve, reject) => {
+          const s = document.createElement('script');
+          s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+          s.onload = resolve;
+          s.onerror = reject;
+          document.head.appendChild(s);
+        });
+      }
+      const result = await Tesseract.recognize(file, 'eng');
+      const lines = result.data.text.split(/\n/).map(x => x.trim()).filter(Boolean);
+      const found = [];
+      lines.forEach(line => {
+        const m = line.match(/^(.+?)\s+(?:x\s*\d+\s+)?(?:₹|Rs\.?|INR)?\s*(\d+(?:[.,]\d{1,2})?)\s*$/i);
+        if (m) {
+          const name = m[1].replace(/[^\w\s&()./-]/g, '').trim();
+          const price = parseFloat(m[2].replace(',', '.'));
+          if (name.length > 1 && price > 0 && !/total|tax|gst|subtotal|change|cash|discount/i.test(name)) {
+            found.push([name, 1, price]);
+          }
+        }
+      });
+      if (found.length) {
+        found.forEach(x => addItem(x[0], x[1], x[2], people.slice()));
+        $('ocrStatus').textContent = `OCR found ${found.length} item(s). Verify names and prices below.`;
+      } else {
+        $('ocrStatus').textContent = 'Could not confidently detect item lines. Raw text: ' + result.data.text.slice(0, 300);
+      }
+    } catch (err) {
+      $('ocrStatus').textContent = 'OCR unavailable offline. Add items from the menu or manually. (' + err.message + ')';
+    }
+  });
+
+  // Initial Render
+  renderMenuSection();
+  render();
+  if (scriptUrl) syncFromSheet(true);
+})();
+</script>
+</body>
+</html>
