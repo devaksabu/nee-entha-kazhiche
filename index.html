@@ -250,7 +250,7 @@ textarea.code-box{
               <label for="menuSelect">Saved Café / Restaurant Menu</label>
               <select id="menuSelect"></select>
             </div>
-            <button id="syncSheetBtn" class="secondary sm" title="Fetch latest prices from Google Sheet">↻ Sync Sheet</button>
+            <button id="syncSheetBtn" class="secondary sm" title="Fetch latest prices from Google Sheet">↻ Refresh Menu</button>
           </div>
 
           <div class="field">
@@ -267,9 +267,10 @@ textarea.code-box{
           <!-- HIDDEN ADMIN PANEL -->
           <div class="admin-panel hidden" id="adminPanel">
             <div class="row" style="justify-content:space-between;flex-wrap:wrap">
-              <h3>🔒 Admin Menu &amp; Google Sheets Manager</h3>
+              <h3>🔒 Admin Menu &amp; Auto-Sync Manager</h3>
               <button id="lockAdminBtn" class="ghost sm">Lock Admin</button>
             </div>
+            <p class="muted small" style="margin:0 0 8px">Every menu or price edit automatically updates Google Sheets for all users.</p>
 
             <div class="row" style="flex-wrap:wrap;margin-top:8px">
               <button id="newMenuBtn" class="sm">＋ New Café Menu</button>
@@ -292,7 +293,7 @@ textarea.code-box{
                 <input id="scriptUrlInput" placeholder="https://script.google.com/macros/s/.../exec">
               </div>
               <button id="saveUrlBtn" class="secondary sm">Save URL</button>
-              <button id="pushSheetBtn" class="sm">⬆ Push to Sheet</button>
+              <button id="pushSheetBtn" class="sm">⬆ Sync Now</button>
               <button id="showScriptBtn" class="secondary sm">Get Apps Script</button>
             </div>
 
@@ -393,7 +394,12 @@ textarea.code-box{
 (function(){
   const $ = id => document.getElementById(id);
 
-  // Safe storage wrapper (prevents blank screen in sandboxed iframes where localStorage throws)
+  // =========================================================================
+  // PASTE YOUR DEPLOYED GOOGLE APPS SCRIPT WEB APP URL BELOW (ends in /exec)
+  // Once pasted here, EVERY user gets live menus & prices automatically!
+  // =========================================================================
+  const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwOhLbCRe8wB54-aF6nG1FwME17PQRJ-84q63Wmfp8WsynBBN5qSSU4Az5ZL5BreXEY/exec';
+
   const memStore = {};
   const safeStorage = {
     get(k){
@@ -405,9 +411,6 @@ textarea.code-box{
       catch(e){ memStore[k] = String(v); }
     }
   };
-
-  // Optional: Paste your deployed Google Apps Script Web App URL here so all users inherit it automatically
-  const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwOhLbCRe8wB54-aF6nG1FwME17PQRJ-84q63Wmfp8WsynBBN5qSSU4Az5ZL5BreXEY/exec';
 
   const DEFAULT_MENUS = {
     south: {
@@ -448,7 +451,7 @@ textarea.code-box{
   let currentMenuKey = Object.keys(menus)[0] || 'south';
   let adminUnlocked = false;
   let adminPin = safeStorage.get('nek_admin_pin') || '19114';
-  let scriptUrl = safeStorage.get('nek_script_url') || DEFAULT_SCRIPT_URL;
+  let scriptUrl = DEFAULT_SCRIPT_URL || safeStorage.get('nek_script_url') || '';
 
   let people = [];
   let items = [];
@@ -465,14 +468,16 @@ textarea.code-box{
     return JSON.parse(JSON.stringify(DEFAULT_MENUS));
   }
 
-  function saveMenus(){
+  function saveMenus(autoPushToCloud = false){
     safeStorage.set('nek_menus_v1', JSON.stringify(menus));
+    if (autoPushToCloud && scriptUrl) {
+      pushToSheet(true);
+    }
   }
 
   const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const money = n => '₹' + (Number(n) || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
-  // Custom Modal Helper
   function openModal(html, onMount){
     const back = $('modalBackdrop');
     const box = $('modalBox');
@@ -561,7 +566,6 @@ textarea.code-box{
     renderMenuSection();
   }
 
-  // Menu Rendering & Operations
   function renderMenuSection(){
     const keys = Object.keys(menus);
     if (!keys.length) {
@@ -628,7 +632,7 @@ textarea.code-box{
             <div class="field"><label>Price (₹)</label><input id="edDishPrice" type="number" min="0" step=".01" value="${dish[2]}"></div>
             <div class="modal-actions">
               <button class="secondary" id="edCancel">Cancel</button>
-              <button id="edSave">Save</button>
+              <button id="edSave">Save &amp; Sync</button>
             </div>
           `, (box, close) => {
             box.querySelector('#edCancel').onclick = close;
@@ -637,7 +641,7 @@ textarea.code-box{
               const np = Math.max(0, +box.querySelector('#edDishPrice').value || 0);
               if (nn) {
                 menus[currentMenuKey].items[idx] = [nn, 1, np];
-                saveMenus();
+                saveMenus(true);
                 renderMenuSection();
               }
               close();
@@ -650,7 +654,7 @@ textarea.code-box{
         btn.onclick = () => {
           const idx = +btn.dataset.delDish;
           menus[currentMenuKey].items.splice(idx, 1);
-          saveMenus();
+          saveMenus(true);
           renderMenuSection();
         };
       });
@@ -669,7 +673,7 @@ textarea.code-box{
     list.forEach(x => addItem(x[0], 1, x[2], people.slice()));
   };
 
-  // Admin Controls
+  // Admin Controls (all auto-sync to Google Sheet if linked)
   $('lockAdminBtn').onclick = () => setAdminState(false);
 
   $('adminAddDishBtn').onclick = () => {
@@ -680,7 +684,7 @@ textarea.code-box{
       return;
     }
     menus[currentMenuKey].items.push([name, 1, price]);
-    saveMenus();
+    saveMenus(true);
     $('adminDishName').value = '';
     $('adminDishPrice').value = '';
     renderMenuSection();
@@ -702,7 +706,7 @@ textarea.code-box{
         const key = label.toLowerCase().replace(/[^a-z0-9]+/g, '_') + '_' + Date.now().toString(36).slice(-3);
         menus[key] = { name: label, items: [] };
         currentMenuKey = key;
-        saveMenus();
+        saveMenus(true);
         renderMenuSection();
         close();
       };
@@ -723,7 +727,7 @@ textarea.code-box{
         const label = box.querySelector('#renMenuInp').value.trim();
         if (label) {
           menus[currentMenuKey].name = label;
-          saveMenus();
+          saveMenus(true);
           renderMenuSection();
         }
         close();
@@ -738,7 +742,7 @@ textarea.code-box{
     }
     delete menus[currentMenuKey];
     currentMenuKey = Object.keys(menus)[0];
-    saveMenus();
+    saveMenus(true);
     renderMenuSection();
   };
 
@@ -754,47 +758,46 @@ textarea.code-box{
     showNoticeModal('PIN Updated', 'Admin PIN updated on this device.');
   };
 
-  // Google Sheets Sync
+  // Google Sheets Sync (Auto-Pull on Load + Auto-Push on Admin Change)
   $('saveUrlBtn').onclick = () => {
     scriptUrl = $('scriptUrlInput').value.trim();
     safeStorage.set('nek_script_url', scriptUrl);
-    showNoticeModal('URL Saved', scriptUrl ? 'Google Apps Script URL saved.' : 'Google Sheet URL cleared.');
+    showNoticeModal('URL Saved', scriptUrl ? 'Google Apps Script URL saved. Tap "Sync Now" to upload current menus.' : 'Google Sheet URL cleared.');
   };
 
   async function syncFromSheet(silent){
     if (!scriptUrl) {
-      if (!silent) showNoticeModal('No Sheet Linked', 'Ask the Admin to configure the Google Apps Script Web App URL in Admin Mode.');
+      if (!silent) showNoticeModal('No Sheet Linked', 'Embed DEFAULT_SCRIPT_URL in index.html or set it in Admin Mode.');
       return;
     }
-    $('sheetSyncStatus').textContent = 'Syncing from Google Sheet...';
+    $('sheetSyncStatus').textContent = 'Syncing latest menu...';
     try {
-      const res = await fetch(scriptUrl);
+      const cacheBust = (scriptUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
+      const res = await fetch(scriptUrl + cacheBust);
       const data = await res.json();
       if (data && data.menus && Object.keys(data.menus).length) {
         menus = data.menus;
-        saveMenus();
+        saveMenus(false);
         renderMenuSection();
-        $('sheetSyncStatus').textContent = '✓ Synced with Google Sheet';
+        $('sheetSyncStatus').textContent = '✓ Live menu synced';
       } else {
-        $('sheetSyncStatus').textContent = 'Sheet is empty (using local menus).';
+        $('sheetSyncStatus').textContent = 'Sheet ready (no dishes in sheet yet).';
       }
     } catch (err) {
-      $('sheetSyncStatus').textContent = 'Could not reach Sheet (using cached menus).';
+      $('sheetSyncStatus').textContent = 'Using cached menu (offline).';
       if (!silent) showNoticeModal('Sync Error', 'Could not fetch from Google Sheet: ' + err.message);
     }
   }
 
-  $('syncSheetBtn').onclick = () => syncFromSheet(false);
-
-  $('pushSheetBtn').onclick = async () => {
-    const url = $('scriptUrlInput').value.trim() || scriptUrl;
+  async function pushToSheet(silent){
+    const url = ($('scriptUrlInput') ? $('scriptUrlInput').value.trim() : '') || scriptUrl;
     if (!url) {
-      showNoticeModal('Missing URL', 'Paste your Google Apps Script Web App URL first.');
+      if (!silent) showNoticeModal('Missing URL', 'Paste your Google Apps Script Web App URL first.');
       return;
     }
     scriptUrl = url;
     safeStorage.set('nek_script_url', scriptUrl);
-    $('sheetSyncStatus').textContent = 'Pushing menus to Google Sheet...';
+    $('sheetSyncStatus').textContent = 'Saving changes to Google Sheet...';
     try {
       await fetch(scriptUrl, {
         method: 'POST',
@@ -802,13 +805,16 @@ textarea.code-box{
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ action: 'saveMenus', menus })
       });
-      $('sheetSyncStatus').textContent = '✓ Pushed to Google Sheet';
-      showNoticeModal('Synced to Sheet', 'All café menus and prices were sent to your Google Sheet.');
+      $('sheetSyncStatus').textContent = '✓ Auto-saved to Google Sheet';
+      if (!silent) showNoticeModal('Synced to Sheet', 'All café menus and prices are now live for everyone.');
     } catch (err) {
-      $('sheetSyncStatus').textContent = 'Push failed.';
-      showNoticeModal('Push Error', err.message);
+      $('sheetSyncStatus').textContent = 'Auto-save failed (saved locally).';
+      if (!silent) showNoticeModal('Push Error', err.message);
     }
-  };
+  }
+
+  $('syncSheetBtn').onclick = () => syncFromSheet(false);
+  $('pushSheetBtn').onclick = () => pushToSheet(false);
 
   $('showScriptBtn').onclick = () => {
     const code = [
@@ -865,7 +871,7 @@ textarea.code-box{
     ].join("\n");
     openModal(`
       <h3>Google Apps Script (Code.gs)</h3>
-      <p class="muted small" style="margin:0 0 8px">1. Open Google Sheets → Extensions → Apps Script.<br>2. Paste this code, click Deploy → New deployment → Web app (Execute as: Me, Access: Anyone).<br>3. Copy the Web App URL into Admin Mode.</p>
+      <p class="muted small" style="margin:0 0 8px">1. Open Google Sheets → Extensions → Apps Script.<br>2. Paste this code, click Deploy → New deployment → Web app (Execute as: Me, Access: Anyone).<br>3. Paste the Web App URL into DEFAULT_SCRIPT_URL in index.html.</p>
       <textarea class="code-box" readonly id="gasCodeArea">${esc(code)}</textarea>
       <div class="modal-actions">
         <button class="secondary" id="copyGasBtn">Copy Code</button>
@@ -1209,7 +1215,7 @@ textarea.code-box{
     }
   });
 
-  // Initial Render
+  // Initial Render & Auto-Pull latest menu from Google Sheet
   renderMenuSection();
   render();
   if (scriptUrl) syncFromSheet(true);
