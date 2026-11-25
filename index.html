@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#252d35">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5">
 <title>NEE.ENTHA.KAZHICHE — Split bills fairly</title>
@@ -1361,6 +1364,13 @@ ${c.ate[p].length ? c.ate[p].join('\n') : 'Nothing'}`)
   render();
   if (scriptUrl) syncFromSheet(true);
 })();
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js');
+    });
+  }
 </script>
 </body>
 </html>
