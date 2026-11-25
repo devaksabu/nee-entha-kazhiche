@@ -1,9 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#252d35">
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5">
 <title>NEE.ENTHA.KAZHICHE — Split bills fairly</title>
@@ -29,10 +26,9 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;bo
 .brand{display:flex;align-items:center;gap:11px;font-weight:950;font-size:clamp(18px,3.2vw,24px);letter-spacing:-1px;text-transform:uppercase;word-break:break-word}
 .logo{
   background:var(--green);color:#20252a;border:2.5px solid var(--line);border-radius:8px;
-  width:42px;height:42px;min-width:42px;display:grid;place-items:center;
+  width:42px;height:42px;min-width:42px;display:grid;place-items:center;font-size:21px;font-weight:950;
   box-shadow:3px 3px 0 var(--line);cursor:pointer;user-select:none;transition:transform .1s;
 }
-.logo svg{width:26px;height:26px;display:block}
 .logo:active{transform:scale(.94)}
 .tag{color:#c1cbd0;font-weight:800;text-transform:uppercase;letter-spacing:.9px;font-size:11px;text-align:right}
 .header-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
@@ -284,15 +280,7 @@ textarea.code-box{
 <div class="wrap">
   <header>
     <div class="brand">
-      <div class="logo" id="secretLogo" title="NEE.ENTHA.KAZHICHE">
-        <svg viewBox="0 0 64 64" fill="none" stroke="#20252a" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M22 29c-2.5-3.5 2.5-7 0-11"/>
-          <path d="M32 27c-2.5-3.5 2.5-7 0-11"/>
-          <path d="M42 29c-2.5-3.5 2.5-7 0-11"/>
-          <ellipse cx="32" cy="41" rx="19" ry="4.5"/>
-          <path d="M16 42.5c3.5 5 28.5 5 32 0"/>
-        </svg>
-      </div>
+      <div class="logo" id="secretLogo" title="NEE.ENTHA.KAZHICHE">÷</div>
       <span>NEE.ENTHA.KAZHICHE</span>
     </div>
     <div class="header-right">
@@ -446,6 +434,7 @@ textarea.code-box{
     <aside class="sticky" id="summarySection">
       <section class="card">
         <h2>Bill summary</h2>
+        <div class="summaryline"><span>Total items ordered</span><strong id="summaryTotalItems">0</strong></div>
         <div class="summaryline"><span>Items subtotal</span><strong id="subtotal">₹0.00</strong></div>
         <div class="summaryline"><span>GST</span><strong id="gstAmount">₹0.00</strong></div>
         <div class="summaryline total"><span>Total</span><span id="grandTotal">₹0.00</span></div>
@@ -675,7 +664,8 @@ textarea.code-box{
     const q = ($('menuSearch').value || '').trim().toLowerCase();
     const list = menus[currentMenuKey].items || [];
     const filtered = list.map((it, idx) => ({ it, idx }))
-      .filter(({ it }) => !q || it[0].toLowerCase().includes(q));
+      .filter(({ it }) => !q || it[0].toLowerCase().includes(q))
+      .sort((a, b) => a.it[0].localeCompare(b.it[0], undefined, { sensitivity: 'base' }));
 
     if (!filtered.length) {
       $('menuItemsGrid').innerHTML = `<p class="muted small" style="grid-column:1/-1;margin:4px 0">No dishes found in this menu.${adminUnlocked ? ' Add dishes below.' : ''}</p>`;
@@ -1189,6 +1179,7 @@ textarea.code-box{
 
     $('billSummaryPill').textContent = `${totalCount} item${totalCount === 1 ? '' : 's'} · ${money(sub)}`;
     $('menuTallyText').textContent = `Bill items: ${totalCount} (${money(sub)})`;
+    $('summaryTotalItems').textContent = totalCount;
     $('subtotal').textContent = money(sub);
     $('gstAmount').textContent = money(gst);
     $('grandTotal').textContent = money(grand);
@@ -1215,7 +1206,7 @@ textarea.code-box{
       `).join('')
       : '<p class="muted small">Add people to see the split.</p>';
 
-    return { sub, gst, total: grand, raw, ate, totals, valid, unassigned };
+    return { totalCount, sub, gst, total: grand, raw, ate, totals, valid, unassigned };
   }
 
   function render(){
@@ -1314,6 +1305,7 @@ ${c.ate[p].length ? c.ate[p].join('\n') : 'Nothing'}`)
     }
     const rows = [
       ['App', 'NEE.ENTHA.KAZHICHE'],
+      ['Total items ordered', c.totalCount],
       [],
       ['Person', 'Items', 'Owes'],
       ...people.map(p => [p, c.ate[p].join(', '), c.totals[p].toFixed(2)])
@@ -1373,13 +1365,6 @@ ${c.ate[p].length ? c.ate[p].join('\n') : 'Nothing'}`)
   render();
   if (scriptUrl) syncFromSheet(true);
 })();
-</script>
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js');
-    });
-  }
 </script>
 </body>
 </html>
