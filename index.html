@@ -150,6 +150,10 @@ input:focus,select:focus{border-color:var(--green);box-shadow:3px 3px 0 var(--gr
 /* Summary */
 .sticky{position:sticky;top:16px}
 .summaryline{display:flex;justify-content:space-between;padding:8px 0;color:#cbd3d4;font-weight:650}
+.receipt-items{border-bottom:1.5px dashed #687681;padding-bottom:8px;margin-bottom:6px}
+.receipt-row{display:flex;justify-content:space-between;gap:10px;padding:4px 0;font-size:12.5px;color:#e6e9e5}
+.receipt-row span:first-child{word-break:break-word}
+.receipt-row strong{white-space:nowrap;color:#f2f0e7}
 .summaryline.total{border-top:2px solid #aab5b9;margin-top:7px;padding-top:14px;font-size:21px;font-weight:900;color:#f2f0e7}
 .personsum{padding:12px 0;border-bottom:1.5px solid #687681}
 .personsum:last-child{border:0}
@@ -434,7 +438,7 @@ textarea.code-box{
     <aside class="sticky" id="summarySection">
       <section class="card">
         <h2>Bill summary</h2>
-        <div class="summaryline"><span>Total items ordered</span><strong id="summaryTotalItems">0</strong></div>
+        <div class="receipt-items hidden" id="receiptItemsList"></div>
         <div class="summaryline"><span>Items subtotal</span><strong id="subtotal">₹0.00</strong></div>
         <div class="summaryline"><span>GST</span><strong id="gstAmount">₹0.00</strong></div>
         <div class="summaryline total"><span>Total</span><span id="grandTotal">₹0.00</span></div>
@@ -536,6 +540,7 @@ textarea.code-box{
   let people = [];
   let items = [];
   let nextId = 1;
+  let activeMode = 'menu';
 
   function loadMenus(){
     try {
@@ -1179,7 +1184,16 @@ textarea.code-box{
 
     $('billSummaryPill').textContent = `${totalCount} item${totalCount === 1 ? '' : 's'} · ${money(sub)}`;
     $('menuTallyText').textContent = `Bill items: ${totalCount} (${money(sub)})`;
-    $('summaryTotalItems').textContent = totalCount;
+    const rList = $('receiptItemsList');
+    if (activeMode !== 'upload' && items.length > 0) {
+      rList.classList.remove('hidden');
+      rList.innerHTML = items.map(it =>
+        `<div class="receipt-row"><span>${esc(it.name)} × ${it.qty}</span><strong>${money(it.qty * it.price)}</strong></div>`
+      ).join('');
+    } else {
+      rList.classList.add('hidden');
+      rList.innerHTML = '';
+    }
     $('subtotal').textContent = money(sub);
     $('gstAmount').textContent = money(gst);
     $('grandTotal').textContent = money(grand);
@@ -1247,8 +1261,10 @@ textarea.code-box{
   $('gstCharge').addEventListener('input', calculate);
 
   document.querySelectorAll('#modeTabs button').forEach(b => b.onclick = () => {
+    activeMode = b.dataset.mode;
     document.querySelectorAll('#modeTabs button').forEach(x => x.classList.toggle('active', x === b));
-    ['upload', 'menu', 'manual'].forEach(m => $(m + 'Panel').classList.toggle('hidden', m !== b.dataset.mode));
+    ['upload', 'menu', 'manual'].forEach(m => $(m + 'Panel').classList.toggle('hidden', m !== activeMode));
+    calculate();
   });
 
   $('jumpSummaryBtn').onclick = () => {
@@ -1305,7 +1321,7 @@ ${c.ate[p].length ? c.ate[p].join('\n') : 'Nothing'}`)
     }
     const rows = [
       ['App', 'NEE.ENTHA.KAZHICHE'],
-      ['Total items ordered', c.totalCount],
+      ...(activeMode !== 'upload' && items.length ? [[], ['Dish', 'Qty', 'Final Price'], ...items.map(it => [it.name, it.qty, (it.qty * it.price).toFixed(2)])] : []),
       [],
       ['Person', 'Items', 'Owes'],
       ...people.map(p => [p, c.ate[p].join(', '), c.totals[p].toFixed(2)])
