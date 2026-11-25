@@ -28,4 +28,4 @@
 
 ## 🚀 Quick Setup
 
-1. **Unlock Admin Mode:** Tap the **`÷`** logo 5 times within 2.5 seconds and enter your Admin PIN to manage menus live.
+1. **Unlock Admin Mode:** Tap the logo 5 times within 2.5 seconds and enter your Admin PIN to manage menus live.
