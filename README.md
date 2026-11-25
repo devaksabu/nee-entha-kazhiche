@@ -28,6 +28,4 @@
 
 ## 🚀 Quick Setup
 
-1. **Host on GitHub Pages:** Upload `index.html` to a public GitHub repository and enable **Settings → Pages → Deploy from a branch (`main` / `/root`)**.
-2. **Connect Google Sheets (Optional):** Create a Google Sheet, paste the Apps Script backend under **Extensions → Apps Script**, deploy as a Web App (*Execute as: Me*, *Access: Anyone*), and set `DEFAULT_SCRIPT_URL` in `index.html`.
-3. **Unlock Admin Mode:** Tap the **`÷`** logo 5 times within 2.5 seconds and enter your Admin PIN to manage menus live.
+1. **Unlock Admin Mode:** Tap the **`÷`** logo 5 times within 2.5 seconds and enter your Admin PIN to manage menus live.
